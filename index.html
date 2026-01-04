@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+
+  <title id="pageTitle">Gold Price Today</title>
+
+  <meta
+    id="metaDescription"
+    name="description"
+    content="Check today's gold price in India. Live 24K, 22K, 18K gold rates with trends."
+  />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <link rel="stylesheet" href="style.css" />
+<link rel="canonical" id="canonicalUrl" href="" />
+
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script type="application/ld+json" id="goldSchema"></script>
+</head>
+
+<body>
+
+<div class="container">
+
+  <h1 id="pageHeading">Gold Price</h1>
+  <p class="subtitle">Live city-wise retail rates</p>
+
+  <!-- CONTROLS -->
+  <div class="controls autocomplete-wrapper">
+    <input
+      id="city"
+      type="text"
+      placeholder="Enter city (e.g. Chennai)"
+      autocomplete="off"
+    />
+
+    <button
+      id="refreshBtn"
+      class="refresh-btn"
+      title="Refresh latest price"
+      aria-label="Refresh gold price"
+    >
+      ⟳
+    </button>
+
+    <div id="citySuggestions" class="autocomplete hidden"></div>
+  </div>
+
+  <div id="status" class="status"></div>
+
+  <!-- PRICE GRID -->
+  <div id="prices" class="prices hidden">
+
+    <div class="price-card">
+      <span>24K</span>
+      <strong id="p24">—</strong>
+      <div id="c24" class="change"></div>
+    </div>
+
+    <div class="price-card">
+      <span>22K</span>
+      <strong id="p22">—</strong>
+      <div id="c22" class="change"></div>
+    </div>
+
+    <div class="price-card">
+      <span>18K</span>
+      <strong id="p18">—</strong>
+      <div id="c18" class="change"></div>
+    </div>
+
+  </div>
+
+  <!-- META -->
+  <div id="meta" class="meta hidden">
+    <span id="updated"></span>
+  </div>
+
+  <!-- CHART -->
+  <div id="chartWrapper" class="chart-wrapper hidden">
+    <div class="chart-controls">
+      <button class="karat-btn active" data-karat="24K">24K</button>
+      <button class="karat-btn" data-karat="22K">22K</button>
+      <button class="karat-btn" data-karat="18K">18K</button>
+    </div>
+
+    <canvas id="historyChart" height="220"></canvas>
+  </div>
+
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>
