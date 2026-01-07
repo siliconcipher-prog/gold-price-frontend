@@ -431,3 +431,44 @@ canvas {
 .daily-insight strong {
   color: var(--gold);
 }
+
+/* =========================
+   FAQ
+========================= */
+
+.faq-section {
+  margin-top: 28px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border-soft);
+}
+
+.faq-section h2 {
+  font-size: 16px;
+  margin-bottom: 12px;
+  color: var(--text-main);
+}
+
+.faq-section details {
+  background: var(--card-bg);
+  border: 1px solid var(--border-soft);
+  border-radius: 12px;
+  padding: 10px 12px;
+  margin-bottom: 8px;
+}
+
+.faq-section summary {
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.faq-section p {
+  font-size: 13px;
+  color: var(--text-muted);
+  margin-top: 8px;
+  line-height: 1.5;
+}
+.faq-section a {
+  color: var(--gold);
+  text-decoration: none;
+}
