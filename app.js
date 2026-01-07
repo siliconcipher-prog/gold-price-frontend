@@ -350,9 +350,18 @@ function renderData(data) {
   hideSkeleton();
   showPrices();
 
+  // ✅ SEO updates
   updateSEO(data.city);
   updateCanonical(data.city);
   updateGoldSchema(data);
+
+  // ✅ SEO HTML enhancement (THIS LINE)
+  const seoCityEl = document.getElementById("seoCity");
+  if (seoCityEl) {
+    seoCityEl.textContent = data.city;
+  }
+
+  document.getElementById("seoCityText")?.textContent = data.city;
 
   document.getElementById("pageHeading").textContent =
     `${data.city} Gold Price`;
