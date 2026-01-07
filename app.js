@@ -2,7 +2,10 @@
    CONFIG
 ========================= */
 
-const API = "https://gold-price-backend-vod4.onrender.com";
+const API = window.location.hostname.includes("localhost")
+  ? "http://127.0.0.1:8000"
+  : "https://gold-price-backend-vod4.onrender.com";
+
 const TIMEOUT_MS = 8000;
 
 let chart;
@@ -355,13 +358,17 @@ function renderData(data) {
   updateCanonical(data.city);
   updateGoldSchema(data);
 
-  // ✅ SEO HTML enhancement (THIS LINE)
-  const seoCityEl = document.getElementById("seoCity");
-  if (seoCityEl) {
-    seoCityEl.textContent = data.city;
-  }
+// ✅ SEO HTML enhancement
+const seoCityEl = document.getElementById("seoCity");
+if (seoCityEl) {
+  seoCityEl.textContent = data.city;
+}
 
-  document.getElementById("seoCityText")?.textContent = data.city;
+const seoCityTextEl = document.getElementById("seoCityText");
+if (seoCityTextEl) {
+  seoCityTextEl.textContent = data.city;
+}
+
 
   document.getElementById("pageHeading").textContent =
     `${data.city} Gold Price`;
