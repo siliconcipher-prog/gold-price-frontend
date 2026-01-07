@@ -405,3 +405,29 @@ canvas {
   visibility: hidden;
 }
 
+/* =========================
+   DAILY INSIGHT
+========================= */
+
+.daily-insight {
+  margin-top: 14px;
+  padding: 12px 14px;
+
+  background: linear-gradient(
+    180deg,
+    rgba(212, 175, 55, 0.15),
+    rgba(212, 175, 55, 0.05)
+  );
+
+  border: 1px solid var(--gold-soft);
+  border-radius: 14px;
+
+  font-size: 13px;
+  line-height: 1.4;
+  color: var(--text-main);
+
+  text-align: center;
+}
+.daily-insight strong {
+  color: var(--gold);
+}

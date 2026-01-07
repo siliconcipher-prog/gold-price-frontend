@@ -187,6 +187,47 @@ function calculateChange(history, karat) {
   const percent = ((diff / prev) * 100).toFixed(2);
   return { diff, percent };
 }
+function generateDailyInsight(city, history, karat = "24K") {
+  // ✅ Fallback for insufficient data
+  if (!history || history.length < 2) {
+    return `ℹ️ Showing latest available gold price for ${city}.`;
+  }
+
+  // ✅ Ensure correct order: oldest → newest
+  const ordered = [...history].sort(
+    (a, b) => new Date(a.date) - new Date(b.date)
+  );
+
+  const prices = ordered.map(h => h[karat]);
+  const today = prices[prices.length - 1];
+  const yesterday = prices[prices.length - 2];
+
+  const min7 = Math.min(...prices);
+  const max7 = Math.max(...prices);
+
+  if (today === max7 && today !== yesterday) {
+    return `📈 ${city} gold price is at its highest in the last 7 days.`;
+  }
+
+  if (today === min7 && today !== yesterday) {
+    return `📉 ${city} gold price is the lowest in the last 7 days.`;
+  }
+
+  const diff = today - yesterday;
+
+  if (diff > 0) {
+    return `⬆️ Gold price in ${city} increased by ₹${diff.toFixed(0)} today.`;
+  }
+
+  if (diff < 0) {
+    return `⬇️ Gold price in ${city} dropped by ₹${Math.abs(diff).toFixed(0)} today.`;
+  }
+
+  return `⏸️ Gold price in ${city} is unchanged from yesterday.`;
+}
+
+
+
 
 /* =========================
    MAIN FETCH
@@ -198,7 +239,7 @@ async function fetchPrice() {
     setStatus("Please enter a city");
     return;
   }
-
+document.getElementById("insight")?.classList.add("hidden");
   city = city
     .toLowerCase()
     .replace(/\b\w/g, c => c.toUpperCase());
@@ -279,6 +320,22 @@ function renderData(data) {
   document.getElementById("pageHeading").textContent =
     `${data.city} Gold Price`;
 
+  /* ===== DAILY INSIGHT (RUN ONCE) ===== */
+  const insightEl = document.getElementById("insight");
+  const insight = generateDailyInsight(
+    data.city,
+    data.history,
+    "24K"
+  );
+
+  if (insight) {
+    insightEl.textContent = insight;
+    insightEl.classList.remove("hidden");
+  } else {
+    insightEl.classList.add("hidden");
+  }
+  /* =================================== */
+
   ["24K", "22K", "18K"].forEach(k => {
     document.getElementById("p" + k.slice(0, 2)).textContent =
       `₹${data.prices[k]}`;
@@ -309,6 +366,7 @@ function renderData(data) {
   document.getElementById("updated").textContent =
     `Updated: ${new Date(data.last_updated).toLocaleString()}`;
 }
+
 
 /* =========================
    CHART
