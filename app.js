@@ -9,6 +9,43 @@ let chart;
 let currentKarat = "24K";
 
 /* =========================
+   DAILY INSIGHT COPY
+========================= */
+
+// Copy variants (A = default for V1)
+const INSIGHT_VARIANT = "A"; // A | B | C
+
+const DAILY_INSIGHT_COPY = {
+  A: {
+    UP:    city => `⬆️ Gold prices moved higher today in ${city}.`,
+    DOWN:  city => `⬇️ Gold prices declined today in ${city}.`,
+    FLAT:  city => `⏸️ Gold prices remained largely unchanged today in ${city}.`,
+    HIGH:  city => `📈 Gold prices are at a 7-day high in ${city}.`,
+    LOW:   city => `📉 Gold prices are at a 7-day low in ${city}.`,
+    FALLBACK: city => `ℹ️ Showing the latest available gold price for ${city}.`
+  },
+
+  B: {
+    UP:    city => `⬆️ Gold prices are higher today in ${city}.`,
+    DOWN:  city => `⬇️ Gold prices are lower today in ${city}.`,
+    FLAT:  city => `⏸️ Gold prices are mostly unchanged today in ${city}.`,
+    HIGH:  city => `📈 Gold prices hit a 7-day high in ${city}.`,
+    LOW:   city => `📉 Gold prices hit a 7-day low in ${city}.`,
+    FALLBACK: city => `ℹ️ Latest gold price shown for ${city}.`
+  },
+
+  C: {
+    UP:    city => `⬆️ Gold prices saw an uptick today in ${city}.`,
+    DOWN:  city => `⬇️ Gold prices saw a decline today in ${city}.`,
+    FLAT:  city => `⏸️ Gold prices remained stable today in ${city}.`,
+    HIGH:  city => `📈 Gold prices touched a 7-day high in ${city}.`,
+    LOW:   city => `📉 Gold prices touched a 7-day low in ${city}.`,
+    FALLBACK: city => `ℹ️ Displaying the most recent gold price for ${city}.`
+  }
+};
+
+
+/* =========================
    DOM ELEMENTS
 ========================= */
 
@@ -188,12 +225,14 @@ function calculateChange(history, karat) {
   return { diff, percent };
 }
 function generateDailyInsight(city, history, karat = "24K") {
-  // ✅ Fallback for insufficient data
+  const COPY = DAILY_INSIGHT_COPY[INSIGHT_VARIANT];
+
+  // Fallback when data is insufficient
   if (!history || history.length < 2) {
-    return `ℹ️ Showing latest available gold price for ${city}.`;
+    return COPY.FALLBACK(city);
   }
 
-  // ✅ Ensure correct order: oldest → newest
+  // Ensure oldest → newest
   const ordered = [...history].sort(
     (a, b) => new Date(a.date) - new Date(b.date)
   );
@@ -206,24 +245,22 @@ function generateDailyInsight(city, history, karat = "24K") {
   const max7 = Math.max(...prices);
 
   if (today === max7 && today !== yesterday) {
-    return `📈 ${city} gold price is at its highest in the last 7 days.`;
+    return COPY.HIGH(city);
   }
 
   if (today === min7 && today !== yesterday) {
-    return `📉 ${city} gold price is the lowest in the last 7 days.`;
+    return COPY.LOW(city);
   }
 
-  const diff = today - yesterday;
-
-  if (diff > 0) {
-    return `⬆️ Gold price in ${city} increased by ₹${diff.toFixed(0)} today.`;
+  if (today > yesterday) {
+    return COPY.UP(city);
   }
 
-  if (diff < 0) {
-    return `⬇️ Gold price in ${city} dropped by ₹${Math.abs(diff).toFixed(0)} today.`;
+  if (today < yesterday) {
+    return COPY.DOWN(city);
   }
 
-  return `⏸️ Gold price in ${city} is unchanged from yesterday.`;
+  return COPY.FLAT(city);
 }
 
 
