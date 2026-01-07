@@ -1,10 +1,10 @@
 /* =========================
    DESIGN TOKENS
 ========================= */
-
 :root {
   --bg-main: #0f1115;
   --bg-gradient-top: #1a1d24;
+
   --card-bg: #16181d;
   --card-bg-soft: #1b1e26;
 
@@ -23,7 +23,6 @@
 /* =========================
    BASE
 ========================= */
-
 * {
   box-sizing: border-box;
 }
@@ -32,6 +31,9 @@ body {
   margin: 0;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI",
     Roboto, Inter, system-ui, sans-serif;
+
+  display: flex;
+  justify-content: center;
 
   background: radial-gradient(
     circle at top,
@@ -42,7 +44,11 @@ body {
   color: var(--text-main);
 }
 
+/* =========================
+   CONTAINER
+========================= */
 .container {
+  width: 100%;
   max-width: 420px;
   margin: 32px auto;
   padding: 22px;
@@ -63,7 +69,6 @@ body {
 /* =========================
    HEADER
 ========================= */
-
 h1 {
   text-align: center;
   font-size: 22px;
@@ -80,9 +85,30 @@ h1 {
 }
 
 /* =========================
+   SEO CONTENT (VISIBLE, SOFT)
+========================= */
+.seo-content {
+  margin-bottom: 18px;
+  padding: 14px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.03);
+  font-size: 13px;
+}
+
+.seo-content h2 {
+  font-size: 15px;
+  margin-bottom: 6px;
+}
+
+.seo-content p {
+  margin: 6px 0;
+  opacity: 0.75;
+  line-height: 1.5;
+}
+
+/* =========================
    CONTROLS
 ========================= */
-
 .controls {
   display: flex;
   gap: 10px;
@@ -99,8 +125,6 @@ input {
 
   border-radius: 14px;
   border: 1px solid var(--border-soft);
-
-  transition: border 0.2s ease, box-shadow 0.2s ease;
 }
 
 input::placeholder {
@@ -116,7 +140,6 @@ input:focus {
 /* =========================
    REFRESH BUTTON
 ========================= */
-
 .refresh-btn {
   width: 42px;
   height: 42px;
@@ -133,38 +156,20 @@ input:focus {
   display: flex;
   align-items: center;
   justify-content: center;
-
-  transition: background 0.2s ease, transform 0.15s ease;
-}
-
-.refresh-btn:hover {
-  background: rgba(255, 255, 255, 0.05);
-}
-
-.refresh-btn:active {
-  transform: rotate(90deg) scale(0.95);
 }
 
 .refresh-btn.loading {
   animation: spin 0.8s linear infinite;
-  cursor: not-allowed;
   opacity: 0.6;
 }
 
-.refresh-btn:disabled {
-  opacity: 0.4;
-  cursor: not-allowed;
-}
-
 @keyframes spin {
-  from { transform: rotate(0deg); }
   to { transform: rotate(360deg); }
 }
 
 /* =========================
    STATUS
 ========================= */
-
 .status {
   text-align: center;
   margin-top: 10px;
@@ -173,65 +178,13 @@ input:focus {
 }
 
 /* =========================
-   AUTOCOMPLETE
-========================= */
-
-.autocomplete-wrapper {
-  position: relative;
-}
-
-.autocomplete {
-  position: absolute;
-  top: calc(100% + 6px);
-  left: 0;
-  right: 0;
-
-  background: var(--card-bg);
-  border: 1px solid var(--border-soft);
-  border-radius: 12px;
-
-  overflow: hidden;
-  max-height: 220px;
-  z-index: 1000;
-}
-
-.autocomplete div {
-  padding: 12px 14px;
-  font-size: 14px;
-  cursor: pointer;
-  transition: background 0.15s ease;
-}
-
-.autocomplete div:hover {
-  background: rgba(255, 255, 255, 0.05);
-}
-
-/* shimmer */
-.city-loading {
-  background-image: linear-gradient(
-    90deg,
-    #0f1115 25%,
-    #1b1e26 37%,
-    #0f1115 63%
-  );
-  background-size: 400% 100%;
-  animation: shimmer 1.2s ease infinite;
-}
-
-@keyframes shimmer {
-  0% { background-position: 100% 0; }
-  100% { background-position: 0 0; }
-}
-
-/* =========================
    PRICE GRID
 ========================= */
-
 .prices {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 12px;
-  margin-top: 22px;
+  margin-top: 18px;
 }
 
 .price-card {
@@ -244,21 +197,12 @@ input:focus {
   border-radius: 16px;
   padding: 16px 12px;
   text-align: center;
-
   border: 1px solid var(--border-soft);
-
-  transition: transform 0.15s ease;
-}
-
-.price-card:hover {
-  transform: translateY(-2px);
 }
 
 .price-card span {
-  display: block;
   font-size: 12px;
   color: var(--text-muted);
-  margin-bottom: 6px;
 }
 
 .price-card strong {
@@ -270,30 +214,40 @@ input:focus {
 /* =========================
    CHANGE INDICATOR
 ========================= */
-
 .change {
   font-size: 12px;
   margin-top: 6px;
 }
 
-.change.up {
-  color: var(--green);
-}
+.change.up { color: var(--green); }
+.change.down { color: var(--red); }
+.change.same { color: var(--text-muted); }
 
-.change.down {
-  color: var(--red);
-}
+/* =========================
+   DAILY INSIGHT
+========================= */
+.daily-insight {
+  margin: 16px 0;
+  padding: 12px 14px;
 
-.change.same {
-  color: var(--text-muted);
+  background: linear-gradient(
+    180deg,
+    rgba(212, 175, 55, 0.15),
+    rgba(212, 175, 55, 0.05)
+  );
+
+  border: 1px solid var(--gold-soft);
+  border-radius: 14px;
+
+  font-size: 13px;
+  text-align: center;
 }
 
 /* =========================
    META INFO
 ========================= */
-
 .meta {
-  margin-top: 16px;
+  margin-top: 14px;
   font-size: 12px;
   color: var(--text-muted);
   display: flex;
@@ -303,11 +257,8 @@ input:focus {
 /* =========================
    CHART
 ========================= */
-
 .chart-wrapper {
-  margin-top: 26px;
-  padding-top: 14px;
-  border-top: none;
+  margin-top: 22px;
 }
 
 .chart-controls {
@@ -325,150 +276,63 @@ input:focus {
   border: 1px solid var(--border-soft);
   background: #0f1115;
   color: var(--text-muted);
-
   cursor: pointer;
-  transition: background 0.15s ease, color 0.15s ease;
-}
-
-.karat-btn:hover {
-  background: rgba(255, 255, 255, 0.05);
 }
 
 .karat-btn.active {
   background: var(--gold);
   color: #000;
-  border-color: var(--gold);
-}
-
-canvas {
-  max-width: 100%;
-}
-
-/* =========================
-   FEEDBACK ANIMATION
-========================= */
-
-.pulse {
-  animation: pulseFade 1.2s ease;
-}
-
-@keyframes pulseFade {
-  0% {
-    background-color: rgba(212, 175, 55, 0.18);
-  }
-  100% {
-    background-color: transparent;
-  }
-}
-
-/* =========================
-   UTIL
-========================= */
-
-.hidden {
-  display: none;
-}
-
-/* =========================
-   SKELETON LOADER
-========================= */
-
-.skeleton {
-  position: relative;
-  overflow: hidden;
-  background: #1b1e26;
-  border-radius: 16px;
-}
-
-.skeleton::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(
-    90deg,
-    transparent,
-    rgba(212, 175, 55, 0.15),
-    transparent
-  );
-  animation: skeletonShimmer 1.4s infinite;
-}
-
-@keyframes skeletonShimmer {
-  0%   { transform: translateX(-100%); }
-  100% { transform: translateX(100%); }
-}
-
-/* skeleton price blocks */
-.price-card.skeleton span,
-.price-card.skeleton strong,
-.price-card.skeleton .change {
-  visibility: hidden;
-}
-
-/* =========================
-   DAILY INSIGHT
-========================= */
-
-.daily-insight {
-  margin-top: 14px;
-  padding: 12px 14px;
-
-  background: linear-gradient(
-    180deg,
-    rgba(212, 175, 55, 0.15),
-    rgba(212, 175, 55, 0.05)
-  );
-
-  border: 1px solid var(--gold-soft);
-  border-radius: 14px;
-
-  font-size: 13px;
-  line-height: 1.4;
-  color: var(--text-main);
-
-  text-align: center;
-}
-.daily-insight strong {
-  color: var(--gold);
 }
 
 /* =========================
    FAQ
 ========================= */
-
 .faq-section {
-  margin-top: 28px;
-  padding-top: 16px;
-  border-top: 1px solid var(--border-soft);
+  margin: 32px auto;
+  padding: 16px;
+  max-width: 420px;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.03);
 }
 
 .faq-section h2 {
   font-size: 16px;
   margin-bottom: 12px;
-  color: var(--text-main);
 }
 
 .faq-section details {
-  background: var(--card-bg);
   border: 1px solid var(--border-soft);
   border-radius: 12px;
   padding: 10px 12px;
   margin-bottom: 8px;
+  background: var(--card-bg);
 }
 
 .faq-section summary {
   cursor: pointer;
   font-size: 14px;
-  font-weight: 500;
 }
 
 .faq-section p {
   font-size: 13px;
   color: var(--text-muted);
   margin-top: 8px;
-  line-height: 1.5;
 }
-.faq-section a {
-  color: var(--gold);
-  text-decoration: none;
+
+/* =========================
+   SEO FOOTER TEXT
+========================= */
+.seo-text {
+  max-width: 420px;
+  margin: 24px auto;
+  font-size: 12px;
+  opacity: 0.55;
+  text-align: center;
+}
+
+/* =========================
+   UTIL
+========================= */
+.hidden {
+  display: none;
 }
