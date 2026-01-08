@@ -89,12 +89,15 @@ h1 {
    SEO CONTENT (VISIBLE, SOFT)
 ========================= */
 .seo-content {
-  margin-bottom: 18px;
+  margin-bottom: 16px;
   padding: 14px;
   border-radius: 14px;
-  background: rgba(255, 255, 255, 0.03);
+
+  background: rgba(255, 255, 255, 0.025);
   font-size: 13px;
+  opacity: 0.85;
 }
+
 
 .seo-content h2 {
   font-size: 15px;
@@ -180,35 +183,35 @@ input:focus {
 /* =========================
    PRICE GRID
 ========================= */
-.prices {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 12px;
-  margin-top: 18px;
-}
-
 .price-card {
   background: linear-gradient(
     180deg,
-    var(--card-bg-soft),
-    var(--card-bg)
+    #1d2028,
+    #14161c
   );
 
-  border-radius: 16px;
-  padding: 16px 12px;
+  border-radius: 18px;
+  padding: 18px 14px;
   text-align: center;
+
   border: 1px solid var(--border-soft);
+
+  box-shadow:
+    0 10px 20px rgba(0, 0, 0, 0.4),
+    inset 0 1px 0 rgba(255, 255, 255, 0.04);
+
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
 }
 
-.price-card span {
-  font-size: 12px;
-  color: var(--text-muted);
+.price-card:hover {
+  transform: translateY(-2px);
+  box-shadow:
+    0 14px 28px rgba(0, 0, 0, 0.55);
 }
-
-.price-card strong {
-  font-size: 20px;
-  font-weight: 600;
-  color: var(--gold);
+.price-card h2 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 500;
 }
 
 /* =========================
@@ -227,21 +230,25 @@ input:focus {
    DAILY INSIGHT
 ========================= */
 .daily-insight {
-  margin: 16px 0;
-  padding: 12px 14px;
+  margin: 18px 0;
+  padding: 14px 16px;
 
   background: linear-gradient(
-    180deg,
-    rgba(212, 175, 55, 0.15),
-    rgba(212, 175, 55, 0.05)
+    135deg,
+    rgba(212, 175, 55, 0.2),
+    rgba(212, 175, 55, 0.06)
   );
 
-  border: 1px solid var(--gold-soft);
-  border-radius: 14px;
+  border: 1px solid rgba(212, 175, 55, 0.35);
+  border-radius: 16px;
 
-  font-size: 13px;
+  font-size: 14px;
+  font-weight: 500;
   text-align: center;
+
+  box-shadow: 0 8px 20px rgba(212, 175, 55, 0.15);
 }
+
 
 /* =========================
    META INFO
@@ -288,14 +295,18 @@ input:focus {
    FAQ
 ========================= */
 .faq-section {
-  width: 100%;
+  margin: 36px auto 0;
+  padding: 18px;
   max-width: 420px;
-  margin: 32px auto;
-  padding: 16px;
-
-  border-radius: 16px;
-  background: rgba(255, 255, 255, 0.03);
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.025);
 }
+
+.faq-section summary {
+  font-size: 14px;
+  font-weight: 500;
+}
+
 
 .faq-section h2 {
   font-size: 16px;
@@ -310,10 +321,7 @@ input:focus {
   background: var(--card-bg);
 }
 
-.faq-section summary {
-  cursor: pointer;
-  font-size: 14px;
-}
+
 
 .faq-section p {
   font-size: 13px;
@@ -338,4 +346,44 @@ input:focus {
 ========================= */
 .hidden {
   display: none;
+}
+
+
+/* =========================
+   AUTOCOMPLETE (FIXED)
+========================= */
+
+.autocomplete-wrapper {
+  position: relative;
+  flex: 1;
+}
+
+.autocomplete {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  right: 0;
+
+  background: var(--card-bg);
+  border: 1px solid var(--border-soft);
+  border-radius: 12px;
+
+  overflow: hidden;
+  max-height: 220px;
+  z-index: 9999;
+
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.6);
+}
+
+.autocomplete div {
+  padding: 12px 14px;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.autocomplete div:hover {
+  background: rgba(255, 255, 255, 0.06);
+}
+.autocomplete .highlight {
+  background: rgba(212, 175, 55, 0.2);
 }
