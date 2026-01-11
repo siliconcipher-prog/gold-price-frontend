@@ -109,14 +109,18 @@ if (seoCityTextEl) seoCityTextEl.textContent = data.city;
 
   document.getElementById("goldSchema").textContent = JSON.stringify({
     "@context": "https://schema.org",
-    "@type": "Product",
-    name: `${data.city} Gold Rate`,
-    offers: {
-      "@type": "Offer",
-      priceCurrency: "INR",
-      price,
-      availability: "https://schema.org/InStock",
-      url: window.location.href
+    "@type": "Dataset",
+    name: `${data.city} Gold Price Today`,
+    description: `Daily gold prices for 24K, 22K and 18K gold in ${data.city}.`,
+    keywords: ["gold price", "gold rate", "24K gold", "22K gold", "18K gold"],
+    dateModified: data.last_updated,
+    spatialCoverage: {
+      "@type": "Place",
+      name: data.city
+    },
+    creator: {
+      "@type": "Organization",
+      name: "Gold Rate India"
     }
   });
 }
