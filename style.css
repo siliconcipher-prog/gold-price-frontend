@@ -646,13 +646,22 @@ input:focus {
     font-size: 22px;
   }
 
+  /* ✅ PRICE GRID: single row */
   .prices {
-    grid-template-columns: 1fr;
-    gap: 12px;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
   }
 
   .price-card {
-    padding: 18px 14px;
+    padding: 14px 10px;
+  }
+
+  .price-card strong {
+    font-size: 16px;
+  }
+
+  .price-card span:first-child {
+    font-size: 13px;
   }
 
   .controls {
