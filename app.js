@@ -62,6 +62,22 @@ function closeAutocomplete() {
   suggestionBox.innerHTML = "";
 }
 
+function showAutocompleteSkeleton(count = 4) {
+  suggestionBox.innerHTML = "";
+  for (let i = 0; i < count; i++) {
+    const div = document.createElement("div");
+    div.className = "skeleton-item";
+    suggestionBox.appendChild(div);
+  }
+  openAutocomplete();
+}
+
+function showAutocompleteError(msg) {
+  closeAutocomplete();
+  setStatus(msg);
+}
+
+
 /* =========================
    SEO HELPERS
 ========================= */
@@ -192,20 +208,28 @@ cityInput.addEventListener("input", () => {
     if (cityAbortController) cityAbortController.abort();
     cityAbortController = new AbortController();
 
+    // ✅ show skeleton immediately
+    showAutocompleteSkeleton();
+    setStatus("");
+
     try {
       const res = await fetch(
         `${API}/api/v1/cities?q=${encodeURIComponent(q)}`,
         { signal: cityAbortController.signal }
       );
 
-      if (!res.ok) return;
+      if (!res.ok) {
+        throw new Error("CITY_FETCH_FAILED");
+      }
 
       const cities = await res.json();
       if (cityInput.value.trim() !== q) return;
 
       suggestionBox.innerHTML = "";
+
       if (!cities.length) {
         closeAutocomplete();
+        setStatus("No matching cities found");
         return;
       }
 
@@ -225,10 +249,15 @@ cityInput.addEventListener("input", () => {
 
       openAutocomplete();
     } catch (err) {
-      if (err.name !== "AbortError") closeAutocomplete();
+      if (err.name === "AbortError") return;
+
+      showAutocompleteError(
+        "Unable to load city suggestions. Please try again."
+      );
     }
   }, 250);
 });
+
 
 document.addEventListener("pointerdown", e => {
   if (!e.target.closest(".autocomplete-wrapper")) {
@@ -325,12 +354,19 @@ insightEl.classList.remove("hidden");
 
     history.pushState({}, "", `/${data.city.toLowerCase().replace(/\s+/g, "-")}-gold-rate`);
     setStatus("");
-  } catch {
-    setStatus("City not supported yet");
-  } finally {
-    clearTimeout(timeout);
-    setLoading(false);
-  }
+  } catch (err) {
+  hideSkeleton();
+  setStatus(
+    err.message === "CITY_NOT_FOUND"
+      ? "City not supported yet"
+      : "Something went wrong. Please try again."
+  );
+}
+finally {
+  clearTimeout(timeout);
+  setLoading(false);
+  closeAutocomplete(); // safety
+}
 }
 
 /* =========================
