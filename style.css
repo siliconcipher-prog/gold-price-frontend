@@ -768,6 +768,21 @@ input:focus {
   display: none !important;
 }
 
+.autocomplete .skeleton-item {
+  height: 18px;
+  margin: 10px 16px;
+  border-radius: 6px;
+  background: linear-gradient(
+    90deg,
+    var(--card-bg-soft),
+    var(--border-soft),
+    var(--card-bg-soft)
+  );
+  background-size: 200% 100%;
+  animation: loading 1.2s infinite;
+}
+
+
 /* =========================
    MOBILE SEARCH
 ========================= */

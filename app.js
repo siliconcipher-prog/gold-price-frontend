@@ -432,6 +432,10 @@ function renderChart(history) {
   const ctx = document.getElementById("historyChart").getContext("2d");
   if (chart) chart.destroy();
 
+  const gradient = ctx.createLinearGradient(0, 0, 0, 220);
+  gradient.addColorStop(0, "rgba(212, 175, 55, 0.35)");
+  gradient.addColorStop(1, "rgba(212, 175, 55, 0)");
+
   chart = new Chart(ctx, {
     type: "line",
     data: {
@@ -439,13 +443,17 @@ function renderChart(history) {
       datasets: [{
         data: history.map(h => h.price),
         borderColor: "#d4af37",
+        backgroundColor: gradient,
         borderWidth: 3,
+        fill: true,
         tension: 0.35,
         pointRadius: 0
       }]
     },
     options: {
-      plugins: { legend: { display: false } },
+      plugins: {
+        legend: { display: false }
+      },
       scales: {
         x: { grid: { display: false } },
         y: { grid: { display: false } }
