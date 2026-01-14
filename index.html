@@ -164,6 +164,40 @@
   </details>
 </div>
 
+<!-- Floating Feedback Button -->
+<button id="feedbackFab" aria-label="Give feedback">
+  ✍️
+</button>
+
+
+
+<!-- Feedback Panel -->
+<div id="feedbackPanel" class="feedback-panel hidden">
+  <div class="feedback-header">
+    <span>Was this page helpful?</span>
+    <button id="feedbackClose">✕</button>
+  </div>
+
+ <div class="feedback-actions">
+  <button id="fbYes" class="yes">👍 Yes</button>
+  <button id="fbNo" class="no">👎 No</button>
+</div>
+
+
+  <textarea
+    id="fbMessage"
+    placeholder="What can we improve? (optional)"
+  ></textarea>
+
+  <button id="fbSubmit" disabled>
+    Submit feedback
+  </button>
+
+  <p id="fbStatus" class="feedback-status"></p>
+</div>
+
+
+
 <p class="seo-text">
   This page shows today’s gold price for 24K, 22K, and 18K gold.
   Prices are updated daily based on the latest available market rates.

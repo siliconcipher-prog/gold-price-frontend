@@ -456,3 +456,127 @@ document.addEventListener("DOMContentLoaded", () => {
   cityInput.value = city;
   fetchPrice();
 });
+
+
+/* =========================
+   Feedback
+========================= */
+
+let feedbackHelpful = null;
+
+const fbYes = document.getElementById("fbYes");
+const fbNo = document.getElementById("fbNo");
+const fbSubmit = document.getElementById("fbSubmit");
+
+function updateSubmitState() {
+  fbSubmit.disabled = feedbackHelpful === null;
+}
+
+fbYes.onclick = () => {
+  if (feedbackHelpful === true) {
+    // unselect
+    feedbackHelpful = null;
+    fbYes.classList.remove("selected", "yes");
+  } else {
+    feedbackHelpful = true;
+    fbYes.classList.add("selected", "yes");
+    fbNo.classList.remove("selected", "no");
+  }
+  updateSubmitState();
+};
+
+fbNo.onclick = () => {
+  if (feedbackHelpful === false) {
+    // unselect
+    feedbackHelpful = null;
+    fbNo.classList.remove("selected", "no");
+  } else {
+    feedbackHelpful = false;
+    fbNo.classList.add("selected", "no");
+    fbYes.classList.remove("selected", "yes");
+  }
+  updateSubmitState();
+};
+
+
+function enableFeedback() {
+  document.getElementById("fbSubmit").disabled = false;
+}
+
+document.getElementById("fbSubmit").onclick = async () => {
+  const message = document.getElementById("fbMessage").value.trim();
+  const city = cityInput.value || "India";
+
+  try {
+    await fetch(`${API}/api/v1/feedback`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        city,
+        helpful: feedbackHelpful,
+        message,
+        page_url: window.location.href
+      })
+    });
+
+    document.getElementById("fbStatus").textContent =
+      "Thanks! Your feedback helps improve the site 🙏";
+
+    document.getElementById("fbSubmit").disabled = true;
+  } catch {
+    document.getElementById("fbStatus").textContent =
+      "Could not submit feedback. Please try later.";
+  }
+};
+
+
+const feedbackFab = document.getElementById("feedbackFab");
+const feedbackPanel = document.getElementById("feedbackPanel");
+const feedbackClose = document.getElementById("feedbackClose");
+
+feedbackFab.onclick = () => {
+  feedbackPanel.classList.toggle("hidden");
+};
+
+feedbackClose.onclick = () => {
+  feedbackPanel.classList.add("hidden");
+};
+
+// Optional: close when clicking outside
+document.addEventListener("click", e => {
+  if (
+    !feedbackPanel.contains(e.target) &&
+    !feedbackFab.contains(e.target)
+  ) {
+    feedbackPanel.classList.add("hidden");
+  }
+});
+
+
+document.getElementById("fbSubmit").onclick = async () => {
+  const btn = document.getElementById("fbSubmit");
+  btn.textContent = "Sending…";
+  btn.disabled = true;
+
+  try {
+    await fetch(`${API}/api/v1/feedback`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        city: cityInput.value || "India",
+        helpful: feedbackHelpful,
+        message: document.getElementById("fbMessage").value.trim(),
+        page_url: window.location.href
+      })
+    });
+
+    btn.textContent = "✓ Sent";
+    document.getElementById("fbStatus").textContent =
+      "Thanks! Your feedback helps improve the site 🙏";
+  } catch {
+    btn.textContent = "Submit feedback";
+    btn.disabled = false;
+    document.getElementById("fbStatus").textContent =
+      "Could not submit feedback. Try again.";
+  }
+};
