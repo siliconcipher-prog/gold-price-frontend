@@ -792,6 +792,7 @@ input:focus {
     flex-direction: row;
     gap: 0;
     width: 100%;
+    align-items: center; /* 👈 vertical centering */
   }
 
   .autocomplete-wrapper {
@@ -812,8 +813,9 @@ input:focus {
   .refresh-btn {
     position: absolute;
     right: 6px;
-    top: 50%;
-    transform: translateY(-50%);
+    inset-block: 0;          
+    margin: auto 0;         
+
 
     width: 36px;
     height: 36px;
@@ -822,6 +824,11 @@ input:focus {
     border-radius: 50%;
     z-index: 2;
   }
+
+  .refresh-btn.loading {
+  pointer-events: none;
+}
+
 
   .autocomplete {
     max-height: 260px;
