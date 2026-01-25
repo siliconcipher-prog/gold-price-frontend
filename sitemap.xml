@@ -8,13 +8,6 @@
     <priority>1.0</priority>
   </url>
 
-  <!-- India -->
-  <url>
-    <loc>https://goldrateindia.co.in/india-gold-rate</loc>
-    <changefreq>daily</changefreq>
-    <priority>0.9</priority>
-  </url>
-
   <!-- Major Cities -->
   <url>
     <loc>https://goldrateindia.co.in/chennai-gold-rate</loc>

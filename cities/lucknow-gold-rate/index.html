@@ -1,120 +1,114 @@
 <!DOCTYPE html>
+
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
 
- <title>Gold Price Today in India – 24K, 22K, 18K Rate</title>
+  <title>Lucknow Gold Price Today (24K, 22K, 18K) – Live Rates in Lucknow</title>
 
+  <meta name="description" content="Check today’s gold rate in Lucknow. Live 24K, 22K & 18K gold prices per gram." />
 
-  <meta
-    id="metaDescription"
-    name="description"
-    content="Check today's gold price in India. Live 24K, 22K, 18K gold rates with trends."
-  />
+  <link rel="canonical" href="https://goldrateindia.co.in/lucknow-gold-rate" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
-  <link rel="stylesheet" href="style.css" />
-<link
-  rel="canonical"
-  id="canonicalUrl"
-  href="https://goldrateindia.co.in/"
-/>
-
-
-
+  <link rel="stylesheet" href="/style.css" />
 
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <script type="application/ld+json">
-{
-  "@context": "https://schema.org",
-  "@type": "Dataset",
-  "name": "India Gold Price Today",
-  "description": "Daily gold prices for 24K, 22K and 18K gold across India.",
-  "keywords": [
-    "gold price india",
-    "gold rate today india",
-    "24k gold price india",
-    "22k gold rate india"
-  ],
-  "spatialCoverage": {
-    "@type": "Country",
-    "name": "India"
-  },
-  "creator": {
-    "@type": "Organization",
-    "name": "Gold Rate India"
-  },
-  "license": "https://goldrateindia.co.in/"
-}
-</script>
 
+  <!-- Dataset schema (STATIC, city-specific) -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "Dataset",
+    "name": "Lucknow Gold Price Today",
+    "description": "Daily gold prices for 24K, 22K and 18K gold in Lucknow.",
+    "keywords": [
+      "Lucknow gold price",
+      "Lucknow gold rate today",
+      "24k gold price Lucknow",
+      "22k gold rate Lucknow"
+    ],
+    "spatialCoverage": {
+      "@type": "Place",
+      "name": "Lucknow"
+    },
+    "creator": {
+      "@type": "Organization",
+      "name": "Gold Rate India"
+    },
+    "license": "https://goldrateindia.co.in/"
+  }
+  </script>
 </head>
 
 <body>
-  <noscript>
+
+<noscript>
   <p>
     Gold prices are updated daily for 24K, 22K, and 18K gold.
     Please enable JavaScript to view live prices by city.
   </p>
 </noscript>
+
 <!-- Breadcrumb -->
 <nav class="breadcrumb" id="breadcrumb">
   <a href="/" id="breadcrumbHome">India Gold Price</a>
   <span id="breadcrumbSeparator"> › </span>
-  <span id="breadcrumbCity"></span>
+  <span id="breadcrumbCity">Lucknow</span>
 </nav>
+
 
 <div class="container">
 
-  <h1 id="pageHeading">Gold Price Today in India</h1>
+  <h1 id="pageHeading">Lucknow Gold Price Today</h1>
   <p class="subtitle">Live city-wise retail rates</p>
 
-  <!-- ✅ SEO CONTENT (ALWAYS VISIBLE) -->
-<div class="seo-content">
-  <h2>Gold Price Today in <span id="seoCity">India</span></h2>
+  <!-- SEO CONTENT -->
+  <div class="seo-content">
+    <h2>Gold Price Today in Lucknow</h2>
 
-  <p>
-    Today’s gold price in <strong><span id="seoCityText">India</span></strong>
-    is updated daily for 24K, 22K, and 18K gold.
-    Prices may vary by city due to local factors.
-  </p>
+    <p>
+      Today’s gold price in <strong>Lucknow</strong> is updated daily for
+      24K, 22K, and 18K gold. Prices may vary due to local factors.
+    </p>
 
-  <p>
-    Gold prices change daily based on international markets,
-    currency movements, and local demand.
-  </p>
-</div>
-
-<div class="controls">
-  <div class="autocomplete-wrapper">
-    <input
-      id="city"
-      type="text"
-      placeholder="Search city (Chennai, Mumbai…)"
-      autocomplete="off"
-    />
-    <div id="citySuggestions" class="autocomplete hidden"></div>
+    <p>
+      Lucknow is one of India’s major gold consumption hubs, and prices here
+      reflect local bullion market conditions.
+    </p>
   </div>
 
-  <button
-    id="refreshBtn"
-    class="refresh-btn"
-    title="Refresh latest price"
-    aria-label="Refresh gold price"
-  >
-    ⟳
-  </button>
-</div>
+  <!-- CONTROLS -->
+  <div class="controls">
+    <div class="autocomplete-wrapper">
+      <input
+        id="city"
+        type="text"
+        placeholder="Search city (Chennai, Mumbai…)"
+        autocomplete="off"
+      />
+      <div id="citySuggestions" class="autocomplete hidden"></div>
+    </div>
 
+    <button
+      id="refreshBtn"
+      class="refresh-btn"
+      title="Refresh latest price"
+      aria-label="Refresh gold price"
+    >
+      ⟳
+    </button>
+  </div>
+
+  <!-- STATUS -->
   <div id="status" class="status"></div>
 
-    <!-- DAILY INSIGHT -->
-<div id="insight" class="daily-insight hidden"></div>
+  <!-- INSIGHT -->
+  <div id="insight" class="daily-insight hidden"></div>
 
   <!-- PRICE GRID -->
   <div id="prices" class="prices hidden">
-
     <div class="price-card">
       <span>24K</span>
       <strong id="p24">—</strong>
@@ -132,10 +126,7 @@
       <strong id="p18">—</strong>
       <div id="c18" class="change"></div>
     </div>
-
   </div>
-
-
 
   <!-- META -->
   <div id="meta" class="meta hidden">
@@ -154,6 +145,7 @@
   </div>
 
 </div>
+
 
 <!-- FAQ SECTION -->
 <div class="faq-section">
@@ -227,16 +219,17 @@
   <p id="fbStatus" class="feedback-status"></p>
 </div>
 
-
-
 <p class="seo-text">
-  This page shows today’s gold price for 24K, 22K, and 18K gold.
+  This page shows today’s gold price for 24K, 22K, and 18K gold in Lucknow.
   Prices are updated daily based on the latest available market rates.
-  Gold prices may vary by city due to local factors and taxes.
 </p>
 
+<!-- Pass city to JS -->
+<script>
+  window.__CITY__ = "Lucknow";
+</script>
 
+<script src="/app.js"></script>
 
-<script src="app.js"></script>
 </body>
 </html>

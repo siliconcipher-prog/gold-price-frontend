@@ -82,6 +82,20 @@ function showAutocompleteError(msg) {
    SEO HELPERS
 ========================= */
 
+function getSelectedCity() {
+  return cityInput && cityInput.value
+    ? cityInput.value.trim()
+    : "";
+}
+
+function isIndiaPage() {
+  return window.location.pathname === "/india-gold-rate";
+}
+
+function isHomePage() {
+  return window.location.pathname === "/";
+}
+
 function getCityFromURL() {
   const match = window.location.pathname.match(/^\/([a-z-]+)-gold-rate$/);
   if (!match) return null;
@@ -92,54 +106,54 @@ function getCityFromURL() {
     .join(" ");
 }
 
-function updateSEO(city) {
-  const title = `${city} Gold Rate Today – 24K, 22K, 18K Price`;
-  const description =
-    `Check today’s gold rate in ${city}. Live 24K, 22K & 18K gold prices per gram.`;
+// function updateSEO(city) {
+//   const title = `${city} Gold Rate Today – 24K, 22K, 18K Price`;
+//   const description =
+//     `Check today’s gold rate in ${city}. Live 24K, 22K & 18K gold prices per gram.`;
 
-  document.title = title;
-  document.getElementById("pageTitle").textContent = title;
-  document
-    .getElementById("metaDescription")
-    .setAttribute("content", description);
-}
+//   document.title = title;
+//   document.getElementById("pageTitle").textContent = title;
+//   document
+//     .getElementById("metaDescription")
+//     .setAttribute("content", description);
+// }
 
-function updateCanonical(city) {
-  const canonical = document.getElementById("canonicalUrl");
-  if (!canonical) return;
+// function updateCanonical(city) {
+//   const canonical = document.getElementById("canonicalUrl");
+//   if (!canonical) return;
 
-  canonical.href = `${window.location.origin}/${city
-    .toLowerCase()
-    .replace(/\s+/g, "-")}-gold-rate`;
-}
+//   canonical.href = `${window.location.origin}/${city
+//     .toLowerCase()
+//     .replace(/\s+/g, "-")}-gold-rate`;
+// }
 
-function updateGoldSchema(data) {
-  const price = data.prices["24K"];
-  if (!price) return;
+// function updateGoldSchema(data) {
+//   const price = data.prices["24K"];
+//   if (!price) return;
 
-  const seoCityEl = document.getElementById("seoCity");
-if (seoCityEl) seoCityEl.textContent = data.city;
+//   const seoCityEl = document.getElementById("seoCity");
+// if (seoCityEl) seoCityEl.textContent = data.city;
 
-const seoCityTextEl = document.getElementById("seoCityText");
-if (seoCityTextEl) seoCityTextEl.textContent = data.city;
+// const seoCityTextEl = document.getElementById("seoCityText");
+// if (seoCityTextEl) seoCityTextEl.textContent = data.city;
 
-  document.getElementById("goldSchema").textContent = JSON.stringify({
-    "@context": "https://schema.org",
-    "@type": "Dataset",
-    name: `${data.city} Gold Price Today`,
-    description: `Daily gold prices for 24K, 22K and 18K gold in ${data.city}.`,
-    keywords: ["gold price", "gold rate", "24K gold", "22K gold", "18K gold"],
-    dateModified: data.last_updated,
-    spatialCoverage: {
-      "@type": "Place",
-      name: data.city
-    },
-    creator: {
-      "@type": "Organization",
-      name: "Gold Rate India"
-    }
-  });
-}
+//   document.getElementById("goldSchema").textContent = JSON.stringify({
+//     "@context": "https://schema.org",
+//     "@type": "Dataset",
+//     name: `${data.city} Gold Price Today`,
+//     description: `Daily gold prices for 24K, 22K and 18K gold in ${data.city}.`,
+//     keywords: ["gold price", "gold rate", "24K gold", "22K gold", "18K gold"],
+//     dateModified: data.last_updated,
+//     spatialCoverage: {
+//       "@type": "Place",
+//       name: data.city
+//     },
+//     creator: {
+//       "@type": "Organization",
+//       name: "Gold Rate India"
+//     }
+//   });
+// }
 
 /* =========================
    CACHE
@@ -313,21 +327,58 @@ function generateDailyInsight(city, history, karat) {
   return COPY.FLAT(city);
 }
 
+function updateBreadcrumb(city) {
+  const cityEl = document.getElementById("breadcrumbCity");
+  const sepEl = document.getElementById("breadcrumbSeparator");
+
+  if (!cityEl || !sepEl) return;
+
+  if (city === "India") {
+    // ✅ Homepage / India page → single breadcrumb
+    cityEl.textContent = "";
+    sepEl.style.display = "none";
+  } else {
+    // ✅ City page
+    cityEl.textContent = city;
+    sepEl.style.display = "inline";
+  }
+}
+
+
+
 /* =========================
    FETCH
 ========================= */
-
 async function fetchPrice() {
   closeAutocomplete();
   if (cityAbortController) cityAbortController.abort();
 
-  let city = cityInput.value.trim();
+  // 1️⃣ Resolve city (CORRECT priority)
+  let city = getSelectedCity();
+
+  // If user didn't type/select, try URL
   if (!city) {
+    city = getCityFromURL() || "";
+  }
+
+  // If still empty → only THEN default to India
+  if (!city) {
+    city = "India";
+  }
+
+  // Validation (KEPT, but now meaningful)
+  if (!city || city.trim() === "") {
     setStatus("Please enter a city");
     return;
   }
 
+  // Normalize
   city = city.replace(/\b\w/g, c => c.toUpperCase());
+
+// 🔑 Sync input ONLY if user did not type
+if (cityInput && !getSelectedCity()) {
+  cityInput.value = city;
+}
 
   setLoading(true);
   setStatus("Loading latest prices…");
@@ -337,8 +388,8 @@ async function fetchPrice() {
   const timeout = setTimeout(() => controller.abort(), TIMEOUT_MS);
 
   const insightEl = document.getElementById("insight");
-insightEl.textContent = "Checking today’s gold price…";
-insightEl.classList.remove("hidden");
+  insightEl.textContent = "Checking today’s gold price…";
+  insightEl.classList.remove("hidden");
 
   try {
     const res = await fetch(
@@ -351,23 +402,31 @@ insightEl.classList.remove("hidden");
     const data = await res.json();
     saveCache(data.city, data);
     renderData(data);
+    updateBreadcrumb(data.city);
 
-    history.pushState({}, "", `/${data.city.toLowerCase().replace(/\s+/g, "-")}-gold-rate`);
+    // 2️⃣ URL update (India = root)
+const slug = data.city.toLowerCase().replace(/\s+/g, "-");
+const nextURL = slug === "india" ? "/" : `/${slug}-gold-rate`;
+
+if (window.location.pathname !== nextURL) {
+  history.pushState({}, "", nextURL);
+}
+
     setStatus("");
   } catch (err) {
-  hideSkeleton();
-  setStatus(
-    err.message === "CITY_NOT_FOUND"
-      ? "City not supported yet"
-      : "Something went wrong. Please try again."
-  );
+    hideSkeleton();
+    setStatus(
+      err.message === "CITY_NOT_FOUND"
+        ? "City not supported yet"
+        : "Something went wrong. Please try again."
+    );
+  } finally {
+    clearTimeout(timeout);
+    setLoading(false);
+    closeAutocomplete();
+  }
 }
-finally {
-  clearTimeout(timeout);
-  setLoading(false);
-  closeAutocomplete(); // safety
-}
-}
+
 
 /* =========================
    RENDER
@@ -376,9 +435,9 @@ finally {
 function renderData(data) {
   hideSkeleton();
 
-  updateSEO(data.city);
-  updateCanonical(data.city);
-  updateGoldSchema(data);
+  // updateSEO(data.city);
+  // updateCanonical(data.city);
+  // updateGoldSchema(data);
 
   document.getElementById("pageHeading").textContent =
     `${data.city} Gold Price`;
@@ -491,13 +550,45 @@ document.querySelectorAll(".karat-btn").forEach(btn => {
 
 refreshBtn.addEventListener("click", fetchPrice);
 
-document.addEventListener("DOMContentLoaded", () => {
-  const city =
-    getCityFromURL() ||
-    localStorage.getItem("lastCity") ||
-    "India";
+// document.addEventListener("DOMContentLoaded", () => {
+//   const city =
+//     getCityFromURL() ||
+//     localStorage.getItem("lastCity") ||
+//     "India";
 
-  cityInput.value = city;
+//   cityInput.value = city;
+//   fetchPrice();
+// });
+
+document.addEventListener("DOMContentLoaded", () => {
+  let city;
+
+  if (isHomePage()) {
+    // ✅ Homepage must always show India
+    city = "India";
+  } else {
+    // ✅ City pages derive city from URL
+    city =
+      getCityFromURL() ||
+      localStorage.getItem("lastCity") ||
+      "India";
+  }
+
+  // if (cityInput) {
+  //   cityInput.value = city === "India" ? "" : city;
+  // }
+
+  if (cityInput) {
+  if (isHomePage()) {
+    // Homepage: empty input, India data
+    cityInput.value = "";
+  } else {
+    // City pages INCLUDING india-gold-rate
+    cityInput.value = city;
+  }
+}
+
+
   fetchPrice();
 });
 

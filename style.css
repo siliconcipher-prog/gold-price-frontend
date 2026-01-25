@@ -1043,3 +1043,39 @@ input:focus {
   color: var(--red);
   box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.2);
 }
+/* =========================
+   Breadcrumb UX Enhancement
+========================= */
+
+.breadcrumb {
+  font-size: 14px;
+  margin: 12px 0 18px;
+  color: #777;
+}
+
+.breadcrumb a {
+  color: #8b7500; /* muted gold */
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.breadcrumb a:hover {
+  text-decoration: underline;
+}
+
+/* Separator */
+#breadcrumbSeparator {
+  margin: 0 6px;
+  color: #aaa;
+}
+
+/* ⭐ Current city emphasis */
+#breadcrumbCity {
+  font-size: 16px;          /* slightly bigger than body */
+  font-weight: 700;
+  color: #b8860b;           /* your gold tone */
+  text-transform: capitalize;
+  letter-spacing: 0.2px;   /* subtle clarity boost */
+}
+/* =========================
+   END OF STYLE.CSS
