@@ -231,6 +231,12 @@ input {
     var(--shadow-soft);
 }
 
+.weight-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  transform: none;
+}
+
 input::placeholder {
   color: var(--text-muted);
   font-weight: 400;
@@ -485,6 +491,15 @@ input:focus {
   color: var(--text-muted);
   margin-bottom: 12px;
   letter-spacing: 0.3px;
+}
+
+.chart-unit-label {
+  text-align: center;
+  margin: -4px 0 10px;
+  font-size: 11px;
+  color: var(--text-muted);
+  opacity: 0.9;
+  letter-spacing: 0.2px;
 }
 
 .chart-controls {

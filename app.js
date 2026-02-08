@@ -18,6 +18,16 @@ let chart;
 let currentKarat = "24K";
 let currentWeight = 1;
 let currentData = null;
+let isLoading = false;
+let lastWeightToggleAt = 0;
+
+const WEIGHT_TOGGLE_DEBOUNCE_MS = 220;
+const PRICE_ANIMATION_MS = 340;
+const CHART_ANIMATION_MS = 360;
+const WEIGHT_TOGGLE_LOCK_MS = CHART_ANIMATION_MS + 80;
+const priceAnimationFrames = new WeakMap();
+let weightToggleLockTimer = null;
+let isWeightToggleLocked = false;
 
 /* =========================
    DAILY INSIGHT COPY
@@ -27,12 +37,12 @@ const INSIGHT_VARIANT = "A";
 
 const DAILY_INSIGHT_COPY = {
   A: {
-    UP: city => `⬆️ Gold prices moved higher today in ${city}.`,
-    DOWN: city => `⬇️ Gold prices declined today in ${city}.`,
-    FLAT: city => `⏸️ Gold prices remained largely unchanged today in ${city}.`,
-    HIGH: city => `📈 Gold prices are at a 7-day high in ${city}.`,
-    LOW: city => `📉 Gold prices are at a 7-day low in ${city}.`,
-    FALLBACK: city => `ℹ️ Showing the latest available gold price for ${city}.`
+    UP: city => `Gold prices moved higher today in ${city}.`,
+    DOWN: city => `Gold prices declined today in ${city}.`,
+    FLAT: city => `Gold prices remained largely unchanged today in ${city}.`,
+    HIGH: city => `Gold prices are at a 7-day high in ${city}.`,
+    LOW: city => `Gold prices are at a 7-day low in ${city}.`,
+    FALLBACK: city => `Showing the latest available gold price for ${city}.`
   }
 };
 
@@ -110,54 +120,7 @@ function getCityFromURL() {
     .join(" ");
 }
 
-// function updateSEO(city) {
-//   const title = `${city} Gold Rate Today – 24K, 22K, 18K Price`;
-//   const description =
-//     `Check today’s gold rate in ${city}. Live 24K, 22K & 18K gold prices per gram.`;
 
-//   document.title = title;
-//   document.getElementById("pageTitle").textContent = title;
-//   document
-//     .getElementById("metaDescription")
-//     .setAttribute("content", description);
-// }
-
-// function updateCanonical(city) {
-//   const canonical = document.getElementById("canonicalUrl");
-//   if (!canonical) return;
-
-//   canonical.href = `${window.location.origin}/${city
-//     .toLowerCase()
-//     .replace(/\s+/g, "-")}-gold-rate`;
-// }
-
-// function updateGoldSchema(data) {
-//   const price = data.prices["24K"];
-//   if (!price) return;
-
-//   const seoCityEl = document.getElementById("seoCity");
-// if (seoCityEl) seoCityEl.textContent = data.city;
-
-// const seoCityTextEl = document.getElementById("seoCityText");
-// if (seoCityTextEl) seoCityTextEl.textContent = data.city;
-
-//   document.getElementById("goldSchema").textContent = JSON.stringify({
-//     "@context": "https://schema.org",
-//     "@type": "Dataset",
-//     name: `${data.city} Gold Price Today`,
-//     description: `Daily gold prices for 24K, 22K and 18K gold in ${data.city}.`,
-//     keywords: ["gold price", "gold rate", "24K gold", "22K gold", "18K gold"],
-//     dateModified: data.last_updated,
-//     spatialCoverage: {
-//       "@type": "Place",
-//       name: data.city
-//     },
-//     creator: {
-//       "@type": "Organization",
-//       name: "Gold Rate India"
-//     }
-//   });
-// }
 
 /* =========================
    CACHE
@@ -193,18 +156,85 @@ function setStatus(msg = "") {
 
 
 function setLoading(flag) {
+  isLoading = flag;
   refreshBtn.disabled = flag;
   refreshBtn.classList.toggle("loading", flag);
+  setWeightToggleDisabled(flag || isWeightToggleLocked);
 }
 
 function formatRupee(value) {
-  return `₹${Math.round(value).toLocaleString("en-IN")}`;
+  return `\u20B9${Number(value).toLocaleString("en-IN", {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 2
+  })}`;
+}
+
+function toPaise(value) {
+  return Math.round(Number(value) * 100);
+}
+
+function fromPaise(value) {
+  return Number(value) / 100;
 }
 
 function scalePrice(value) {
-  return value * currentWeight;
+  // Always derive from base price using paise math to prevent drift on repeated toggles.
+  return fromPaise(toPaise(value) * currentWeight);
 }
 
+function setWeightToggleDisabled(flag) {
+  document.querySelectorAll(".weight-btn").forEach(btn => {
+    btn.disabled = flag || isWeightToggleLocked;
+  });
+}
+
+function lockWeightToggleForTransition() {
+  isWeightToggleLocked = true;
+  setWeightToggleDisabled(true);
+
+  if (weightToggleLockTimer) {
+    clearTimeout(weightToggleLockTimer);
+  }
+
+  weightToggleLockTimer = setTimeout(() => {
+    isWeightToggleLocked = false;
+    setWeightToggleDisabled(isLoading);
+    weightToggleLockTimer = null;
+  }, WEIGHT_TOGGLE_LOCK_MS);
+}
+function animatePriceValue(el, toValue) {
+  const prev = Number(el.dataset.priceValue ?? toValue);
+  const next = Number(toValue);
+
+  if (prev === next) {
+    el.textContent = formatRupee(next);
+    el.dataset.priceValue = String(next);
+    return;
+  }
+
+  const activeFrame = priceAnimationFrames.get(el);
+  if (activeFrame) cancelAnimationFrame(activeFrame);
+
+  const start = performance.now();
+  const delta = next - prev;
+
+  const tick = now => {
+    const progress = Math.min((now - start) / PRICE_ANIMATION_MS, 1);
+    const eased = 1 - Math.pow(1 - progress, 3);
+    const current = prev + delta * eased;
+    el.textContent = formatRupee(current);
+
+    if (progress < 1) {
+      priceAnimationFrames.set(el, requestAnimationFrame(tick));
+      return;
+    }
+
+    el.dataset.priceValue = String(next);
+    priceAnimationFrames.delete(el);
+  };
+
+  priceAnimationFrames.set(el, requestAnimationFrame(tick));
+}
 function updateWeightToggleUI() {
   document.querySelectorAll(".weight-btn").forEach(btn => {
     const isActive = Number(btn.dataset.weight) === currentWeight;
@@ -237,11 +267,19 @@ function ensureWeightToggle() {
     );
 
     btn.addEventListener("click", () => {
+      if (isLoading || isWeightToggleLocked) return;
+
+      const now = Date.now();
+      if (now - lastWeightToggleAt < WEIGHT_TOGGLE_DEBOUNCE_MS) return;
+      lastWeightToggleAt = now;
+
       if (currentWeight === weight) return;
+
       currentWeight = weight;
       updateWeightToggleUI();
       if (currentData) {
-        renderData(currentData);
+        lockWeightToggleForTransition();
+        renderData(currentData, { animatePrices: true });
       }
     });
 
@@ -250,7 +288,6 @@ function ensureWeightToggle() {
 
   controls.insertAdjacentElement("afterend", toggle);
 }
-
 function showSkeleton() {
   document.getElementById("prices").classList.remove("hidden");
   document.querySelectorAll(".price-card")
@@ -280,7 +317,7 @@ cityInput.addEventListener("input", () => {
     if (cityAbortController) cityAbortController.abort();
     cityAbortController = new AbortController();
 
-    // ✅ show skeleton immediately
+    // show skeleton immediately
     showAutocompleteSkeleton();
     setStatus("");
 
@@ -392,11 +429,11 @@ function updateBreadcrumb(city) {
   if (!cityEl || !sepEl) return;
 
   if (city === "India") {
-    // ✅ Homepage / India page → single breadcrumb
+    // Homepage / India page -> single breadcrumb
     cityEl.textContent = "";
     sepEl.style.display = "none";
   } else {
-    // ✅ City page
+    // City page
     cityEl.textContent = city;
     sepEl.style.display = "inline";
   }
@@ -411,7 +448,7 @@ async function fetchPrice() {
   closeAutocomplete();
   if (cityAbortController) cityAbortController.abort();
 
-  // 1️⃣ Resolve city (CORRECT priority)
+  // 1) Resolve city (CORRECT priority)
   let city = getSelectedCity();
 
   // If user didn't type/select, try URL
@@ -419,7 +456,7 @@ async function fetchPrice() {
     city = getCityFromURL() || "";
   }
 
-  // If still empty → only THEN default to India
+  // If still empty -> only then default to India
   if (!city) {
     city = "India";
   }
@@ -433,20 +470,20 @@ async function fetchPrice() {
   // Normalize
   city = city.replace(/\b\w/g, c => c.toUpperCase());
 
-// 🔑 Sync input ONLY if user did not type
+// Sync input only if user did not type
 if (cityInput && !getSelectedCity()) {
   cityInput.value = city;
 }
 
   setLoading(true);
-  setStatus("Loading latest prices…");
+  setStatus("Loading latest prices...");
   showSkeleton();
 
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), TIMEOUT_MS);
 
   const insightEl = document.getElementById("insight");
-  insightEl.textContent = "Checking today’s gold price…";
+  insightEl.textContent = "Checking today's gold price...";
   insightEl.classList.remove("hidden");
 
   try {
@@ -462,7 +499,7 @@ if (cityInput && !getSelectedCity()) {
     renderData(data);
     updateBreadcrumb(data.city);
 
-    // 2️⃣ URL update (India = root)
+    // 2) URL update (India = root)
 const slug = data.city.toLowerCase().replace(/\s+/g, "-");
 const nextURL = slug === "india" ? "/" : `/${slug}-gold-rate`;
 
@@ -490,103 +527,229 @@ if (window.location.pathname !== nextURL) {
    RENDER
 ========================= */
 
-function renderData(data) {
+function getScaledHistory(history, karat) {
+  if (!history || !history.length) return [];
+
+  return history.map(h => ({
+    date: h.date,
+    price: scalePrice(h[karat])
+  }));
+}
+
+function renderData(data, options = {}) {
+  const { animatePrices = false } = options;
   currentData = data;
   hideSkeleton();
-
-  // updateSEO(data.city);
-  // updateCanonical(data.city);
-  // updateGoldSchema(data);
 
   document.getElementById("pageHeading").textContent =
     `${data.city} Gold Price`;
 
   const insightEl = document.getElementById("insight");
-if (!data.history || data.history.length === 0) {
-  insightEl.textContent = `Showing today’s gold price for ${data.city}`;
-} else {
-  insightEl.textContent =
-    generateDailyInsight(data.city, data.history, "24K");
-}
+  if (!data.history || data.history.length === 0) {
+    insightEl.textContent = `Showing today's gold price for ${data.city}`;
+  } else {
+    insightEl.textContent =
+      generateDailyInsight(data.city, data.history, "24K");
+  }
   insightEl.classList.remove("hidden");
 
   PRICE_KEYS.forEach(k => {
     const scaledPrice = scalePrice(data.prices[k]);
-    document.getElementById("p" + k.slice(0, 2)).textContent =
-      formatRupee(scaledPrice);
+    const priceEl = document.getElementById("p" + k.slice(0, 2));
+
+    if (animatePrices) {
+      animatePriceValue(priceEl, scaledPrice);
+    } else {
+      priceEl.textContent = formatRupee(scaledPrice);
+      priceEl.dataset.priceValue = String(scaledPrice);
+    }
 
     const change = calculateChange(data.history, k);
     const el = document.getElementById("c" + k.slice(0, 2));
 
     if (!change) {
-      el.textContent = "—";
+      el.textContent = "-";
       el.className = "change same";
     } else if (change.diff > 0) {
       const scaledDiff = scalePrice(change.diff);
-      el.textContent = `▲ ${formatRupee(scaledDiff)} (+${change.percent}%)`;
+      el.textContent = `\u2191 ${formatRupee(scaledDiff)} (+${change.percent}%)`;
       el.className = "change up";
     } else {
       const scaledDiff = scalePrice(Math.abs(change.diff));
       el.textContent =
-        `▼ ${formatRupee(scaledDiff)} (-${Math.abs(change.percent)}%)`;
+        `\u2193 ${formatRupee(scaledDiff)} (-${Math.abs(change.percent)}%)`;
       el.className = "change down";
     }
   });
 
-  renderChart(
-    data.history.map(h => ({ date: h.date, price: scalePrice(h[currentKarat]) }))
-  );
+  renderChart(getScaledHistory(data.history, currentKarat));
 
   document.getElementById("updated").textContent =
-    `Updated: ${new Date(data.last_updated).toLocaleString()} • Showing ${currentWeight}g`;
+    `Updated: ${new Date(data.last_updated).toLocaleString()} | Showing ${currentWeight}g`;
 }
-
 /* =========================
    CHART
 ========================= */
+
+function computeYAxisBounds(values) {
+  if (!values.length) return { min: 0, max: 100 };
+
+  const minValue = Math.min(...values);
+  const maxValue = Math.max(...values);
+
+  const range = Math.max(maxValue - minValue, 1);
+  const paddedMin = Math.max(0, minValue - range * 0.12);
+  const paddedMax = maxValue + range * 0.12;
+  const paddedRange = Math.max(paddedMax - paddedMin, 1);
+
+  const targetTicks = 5;
+  const roughStep = paddedRange / targetTicks;
+  const magnitude = Math.pow(10, Math.floor(Math.log10(roughStep)));
+  const residual = roughStep / magnitude;
+
+  let niceMultiplier = 1;
+  if (residual > 5) {
+    niceMultiplier = 10;
+  } else if (residual > 2) {
+    niceMultiplier = 5;
+  } else if (residual > 1) {
+    niceMultiplier = 2;
+  }
+
+  const step = niceMultiplier * magnitude;
+  const min = Math.floor(paddedMin / step) * step;
+  const max = Math.ceil(paddedMax / step) * step;
+
+  return { min, max, step };
+}
+
+function buildChartGradient(ctx) {
+  const gradient = ctx.createLinearGradient(0, 0, 0, 220);
+  gradient.addColorStop(0, "rgba(212, 175, 55, 0.35)");
+  gradient.addColorStop(1, "rgba(212, 175, 55, 0)");
+  return gradient;
+}
+
+function getChartUnitText() {
+  return `Price (\u20B9 / ${currentWeight}g)`;
+}
+
+function ensureChartUnitLabel() {
+  const wrapper = document.getElementById("chartWrapper");
+  if (!wrapper) return null;
+
+  let label = wrapper.querySelector(".chart-unit-label");
+  if (!label) {
+    label = document.createElement("div");
+    label.className = "chart-unit-label";
+    const controls = wrapper.querySelector(".chart-controls");
+    if (controls && controls.nextSibling) {
+      wrapper.insertBefore(label, controls.nextSibling);
+    } else {
+      wrapper.appendChild(label);
+    }
+  }
+
+  label.textContent = getChartUnitText();
+  return label;
+}
 
 function renderChart(history) {
   if (!history || history.length < 2) return;
 
   document.getElementById("chartWrapper").classList.remove("hidden");
+  ensureChartUnitLabel();
 
   const ctx = document.getElementById("historyChart").getContext("2d");
-  if (chart) chart.destroy();
+  const prices = history.map(h => h.price);
+  const bounds = computeYAxisBounds(prices);
+  const labels = history.map(h => h.date);
 
-  const gradient = ctx.createLinearGradient(0, 0, 0, 220);
-  gradient.addColorStop(0, "rgba(212, 175, 55, 0.35)");
-  gradient.addColorStop(1, "rgba(212, 175, 55, 0)");
-
-  chart = new Chart(ctx, {
-    type: "line",
-    data: {
-      labels: history.map(h => h.date),
-      datasets: [{
-        data: history.map(h => h.price),
-        borderColor: "#d4af37",
-        backgroundColor: gradient,
-        borderWidth: 3,
-        fill: true,
-        tension: 0.35,
-        pointRadius: 0
-      }]
-    },
-    options: {
-      plugins: {
-        legend: { display: false }
+  if (!chart) {
+    chart = new Chart(ctx, {
+      type: "line",
+      data: {
+        labels,
+        datasets: [{
+          label: `${currentKarat} \u00B7 ${currentWeight}g`,
+          data: prices,
+          borderColor: "#d4af37",
+          backgroundColor: buildChartGradient(ctx),
+          borderWidth: 3,
+          fill: true,
+          tension: 0.35,
+          pointRadius: 0
+        }]
       },
-      scales: {
-        x: { grid: { display: false } },
-        y: { grid: { display: false } }
+      options: {
+        animation: {
+          duration: CHART_ANIMATION_MS,
+          easing: "easeOutCubic"
+        },
+        layout: {
+          padding: {
+            top: 10,
+            right: 8,
+            bottom: 4,
+            left: 6
+          }
+        },
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            callbacks: {
+              title: () => `${currentKarat} \u00B7 ${currentWeight}g`,
+              label: context => `Price: ${formatRupee(context.parsed.y)}`
+            }
+          }
+        },
+        scales: {
+          x: {
+            grid: { display: false },
+            ticks: {
+              padding: 8
+            }
+          },
+          y: {
+            min: bounds.min,
+            max: bounds.max,
+            grid: { display: false },
+            ticks: {
+              stepSize: bounds.step,
+              maxTicksLimit: 6,
+              includeBounds: false,
+              padding: 10,
+              callback: value => formatRupee(value)
+            }
+          }
+        }
       }
-    }
-  });
+    });
+    return;
+  }
+
+  chart.data.labels = labels;
+  chart.data.datasets[0].label = `${currentKarat} \u00B7 ${currentWeight}g`;
+  chart.data.datasets[0].data = prices;
+  chart.options.animation.duration = CHART_ANIMATION_MS;
+  chart.options.animation.easing = "easeOutCubic";
+  chart.options.layout.padding.top = 10;
+  chart.options.layout.padding.right = 8;
+  chart.options.layout.padding.bottom = 4;
+  chart.options.layout.padding.left = 6;
+  chart.options.scales.x.ticks.padding = 8;
+  chart.options.scales.y.ticks.stepSize = bounds.step;
+  chart.options.scales.y.ticks.maxTicksLimit = 6;
+  chart.options.scales.y.ticks.includeBounds = false;
+  chart.options.scales.y.ticks.padding = 10;
+  chart.options.scales.y.min = bounds.min;
+  chart.options.scales.y.max = bounds.max;
+  chart.update();
 }
 
 /* =========================
    KARAT SWITCH
 ========================= */
-
 document.querySelectorAll(".karat-btn").forEach(btn => {
   btn.onclick = () => {
     document.querySelectorAll(".karat-btn")
@@ -594,18 +757,11 @@ document.querySelectorAll(".karat-btn").forEach(btn => {
     btn.classList.add("active");
 
     currentKarat = btn.dataset.karat;
-    const cached = loadCache(cityInput.value);
-    if (cached) {
-      renderChart(
-        cached.history.map(h => ({
-          date: h.date,
-          price: scalePrice(h[currentKarat])
-        }))
-      );
+    if (currentData) {
+      renderChart(getScaledHistory(currentData.history, currentKarat));
     }
   };
 });
-
 /* =========================
    INIT
 ========================= */
@@ -627,10 +783,10 @@ document.addEventListener("DOMContentLoaded", () => {
   let city;
 
   if (isHomePage()) {
-    // ✅ Homepage must always show India
+    // Homepage must always show India
     city = "India";
   } else {
-    // ✅ City pages derive city from URL
+    // City pages derive city from URL
     city =
       getCityFromURL() ||
       localStorage.getItem("lastCity") ||
@@ -718,7 +874,7 @@ document.getElementById("fbSubmit").onclick = async () => {
     });
 
     document.getElementById("fbStatus").textContent =
-      "Thanks! Your feedback helps improve the site 🙏";
+      "Thanks! Your feedback helps improve the site.";
 
     document.getElementById("fbSubmit").disabled = true;
   } catch {
@@ -753,7 +909,7 @@ document.addEventListener("click", e => {
 
 document.getElementById("fbSubmit").onclick = async () => {
   const btn = document.getElementById("fbSubmit");
-  btn.textContent = "Sending…";
+  btn.textContent = "Sending...";
   btn.disabled = true;
 
   try {
@@ -768,9 +924,9 @@ document.getElementById("fbSubmit").onclick = async () => {
       })
     });
 
-    btn.textContent = "✓ Sent";
+    btn.textContent = "Sent";
     document.getElementById("fbStatus").textContent =
-      "Thanks! Your feedback helps improve the site 🙏";
+      "Thanks! Your feedback helps improve the site.";
   } catch {
     btn.textContent = "Submit feedback";
     btn.disabled = false;
