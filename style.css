@@ -188,33 +188,47 @@ input {
   margin: 0 0 14px;
   padding: 6px;
   border: 1px solid var(--border-soft);
-  border-radius: 999px;
+  border-radius: 16px;
   background: linear-gradient(135deg, var(--card-bg), var(--card-bg-soft));
   box-shadow: var(--shadow-soft);
 }
 
 .weight-btn {
-  min-width: 56px;
+  min-width: 60px;
   padding: 8px 14px;
   border: 1px solid transparent;
-  border-radius: 999px;
+  border-radius: 12px;
   background: transparent;
   color: var(--text-muted);
-  font-size: 13px;
-  font-weight: 600;
+  font-size: 14px;
+  font-weight: 500;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: all 0.3s ease;
 }
 
 .weight-btn:hover {
-  color: var(--text-main);
-  border-color: var(--border-medium);
+  border-color: var(--gold);
+  color: var(--gold);
+  transform: translateY(-1px);
+  background: var(--card-bg);
+}
+
+.weight-btn:active {
+  transform: translateY(0);
 }
 
 .weight-btn.active {
   background: linear-gradient(135deg, var(--gold), #f4c430);
   color: #000;
+  border-color: var(--gold);
   box-shadow: 0 4px 12px var(--gold-glow);
+}
+
+.weight-btn:focus-visible {
+  outline: none;
+  box-shadow:
+    0 0 0 3px var(--gold-soft),
+    var(--shadow-soft);
 }
 
 input::placeholder {
