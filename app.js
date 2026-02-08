@@ -678,13 +678,23 @@ function renderChart(history) {
           borderWidth: 3,
           fill: true,
           tension: 0.35,
-          pointRadius: 0
+          pointRadius: 0,
+          pointHitRadius: 18,
+          pointHoverRadius: 4
         }]
       },
       options: {
         animation: {
           duration: CHART_ANIMATION_MS,
           easing: "easeOutCubic"
+        },
+        interaction: {
+          mode: "index",
+          intersect: false
+        },
+        hover: {
+          mode: "index",
+          intersect: false
         },
         layout: {
           padding: {
@@ -697,6 +707,7 @@ function renderChart(history) {
         plugins: {
           legend: { display: false },
           tooltip: {
+            enabled: true,
             callbacks: {
               title: () => `${currentKarat} \u00B7 ${currentWeight}g`,
               label: context => `Price: ${formatRupee(context.parsed.y)}`
@@ -731,8 +742,14 @@ function renderChart(history) {
   chart.data.labels = labels;
   chart.data.datasets[0].label = `${currentKarat} \u00B7 ${currentWeight}g`;
   chart.data.datasets[0].data = prices;
+  chart.data.datasets[0].pointHitRadius = 18;
+  chart.data.datasets[0].pointHoverRadius = 4;
   chart.options.animation.duration = CHART_ANIMATION_MS;
   chart.options.animation.easing = "easeOutCubic";
+  chart.options.interaction.mode = "index";
+  chart.options.interaction.intersect = false;
+  chart.options.hover.mode = "index";
+  chart.options.hover.intersect = false;
   chart.options.layout.padding.top = 10;
   chart.options.layout.padding.right = 8;
   chart.options.layout.padding.bottom = 4;
