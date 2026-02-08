@@ -16,6 +16,8 @@ const TIMEOUT_MS = 8000;
 
 let chart;
 let currentKarat = "24K";
+let currentWeight = 1;
+let currentData = null;
 
 /* =========================
    DAILY INSIGHT COPY
@@ -42,6 +44,8 @@ const cityInput = document.getElementById("city");
 const statusEl = document.getElementById("status");
 const suggestionBox = document.getElementById("citySuggestions");
 const refreshBtn = document.getElementById("refreshBtn");
+const WEIGHT_OPTIONS = [1, 8];
+const PRICE_KEYS = ["24K", "22K", "18K"];
 
 /* =========================
    AUTOCOMPLETE STATE
@@ -191,6 +195,60 @@ function setStatus(msg = "") {
 function setLoading(flag) {
   refreshBtn.disabled = flag;
   refreshBtn.classList.toggle("loading", flag);
+}
+
+function formatRupee(value) {
+  return `₹${Math.round(value).toLocaleString("en-IN")}`;
+}
+
+function scalePrice(value) {
+  return value * currentWeight;
+}
+
+function updateWeightToggleUI() {
+  document.querySelectorAll(".weight-btn").forEach(btn => {
+    const isActive = Number(btn.dataset.weight) === currentWeight;
+    btn.classList.toggle("active", isActive);
+    btn.setAttribute("aria-pressed", isActive ? "true" : "false");
+  });
+}
+
+function ensureWeightToggle() {
+  if (document.getElementById("weightToggle")) return;
+
+  const controls = document.querySelector(".controls");
+  if (!controls) return;
+
+  const toggle = document.createElement("div");
+  toggle.id = "weightToggle";
+  toggle.className = "weight-toggle";
+  toggle.setAttribute("role", "group");
+  toggle.setAttribute("aria-label", "Gold weight");
+
+  WEIGHT_OPTIONS.forEach(weight => {
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = `weight-btn${weight === currentWeight ? " active" : ""}`;
+    btn.dataset.weight = String(weight);
+    btn.textContent = `${weight}g`;
+    btn.setAttribute(
+      "aria-pressed",
+      weight === currentWeight ? "true" : "false"
+    );
+
+    btn.addEventListener("click", () => {
+      if (currentWeight === weight) return;
+      currentWeight = weight;
+      updateWeightToggleUI();
+      if (currentData) {
+        renderData(currentData);
+      }
+    });
+
+    toggle.appendChild(btn);
+  });
+
+  controls.insertAdjacentElement("afterend", toggle);
 }
 
 function showSkeleton() {
@@ -433,6 +491,7 @@ if (window.location.pathname !== nextURL) {
 ========================= */
 
 function renderData(data) {
+  currentData = data;
   hideSkeleton();
 
   // updateSEO(data.city);
@@ -451,9 +510,10 @@ if (!data.history || data.history.length === 0) {
 }
   insightEl.classList.remove("hidden");
 
-  ["24K", "22K", "18K"].forEach(k => {
+  PRICE_KEYS.forEach(k => {
+    const scaledPrice = scalePrice(data.prices[k]);
     document.getElementById("p" + k.slice(0, 2)).textContent =
-      `₹${data.prices[k]}`;
+      formatRupee(scaledPrice);
 
     const change = calculateChange(data.history, k);
     const el = document.getElementById("c" + k.slice(0, 2));
@@ -462,21 +522,23 @@ if (!data.history || data.history.length === 0) {
       el.textContent = "—";
       el.className = "change same";
     } else if (change.diff > 0) {
-      el.textContent = `▲ ₹${change.diff.toFixed(0)} (+${change.percent}%)`;
+      const scaledDiff = scalePrice(change.diff);
+      el.textContent = `▲ ${formatRupee(scaledDiff)} (+${change.percent}%)`;
       el.className = "change up";
     } else {
+      const scaledDiff = scalePrice(Math.abs(change.diff));
       el.textContent =
-        `▼ ₹${Math.abs(change.diff).toFixed(0)} (-${Math.abs(change.percent)}%)`;
+        `▼ ${formatRupee(scaledDiff)} (-${Math.abs(change.percent)}%)`;
       el.className = "change down";
     }
   });
 
   renderChart(
-    data.history.map(h => ({ date: h.date, price: h[currentKarat] }))
+    data.history.map(h => ({ date: h.date, price: scalePrice(h[currentKarat]) }))
   );
 
   document.getElementById("updated").textContent =
-    `Updated: ${new Date(data.last_updated).toLocaleString()}`;
+    `Updated: ${new Date(data.last_updated).toLocaleString()} • Showing ${currentWeight}g`;
 }
 
 /* =========================
@@ -537,7 +599,7 @@ document.querySelectorAll(".karat-btn").forEach(btn => {
       renderChart(
         cached.history.map(h => ({
           date: h.date,
-          price: h[currentKarat]
+          price: scalePrice(h[currentKarat])
         }))
       );
     }
@@ -561,6 +623,7 @@ refreshBtn.addEventListener("click", fetchPrice);
 // });
 
 document.addEventListener("DOMContentLoaded", () => {
+  ensureWeightToggle();
   let city;
 
   if (isHomePage()) {

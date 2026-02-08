@@ -182,6 +182,41 @@ input {
   box-sizing: border-box;
 }
 
+.weight-toggle {
+  display: inline-flex;
+  gap: 8px;
+  margin: 0 0 14px;
+  padding: 6px;
+  border: 1px solid var(--border-soft);
+  border-radius: 999px;
+  background: linear-gradient(135deg, var(--card-bg), var(--card-bg-soft));
+  box-shadow: var(--shadow-soft);
+}
+
+.weight-btn {
+  min-width: 56px;
+  padding: 8px 14px;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.weight-btn:hover {
+  color: var(--text-main);
+  border-color: var(--border-medium);
+}
+
+.weight-btn.active {
+  background: linear-gradient(135deg, var(--gold), #f4c430);
+  color: #000;
+  box-shadow: 0 4px 12px var(--gold-glow);
+}
+
 input::placeholder {
   color: var(--text-muted);
   font-weight: 400;
@@ -667,6 +702,12 @@ input:focus {
   .controls {
     flex-direction: column;
     gap: 12px;
+  }
+
+  .weight-toggle {
+    width: 100%;
+    justify-content: center;
+    margin-bottom: 12px;
   }
 
   .autocomplete {

@@ -1,4 +1,5 @@
 User-agent: *
+Disallow: /cities/
 Allow: /
 
 Sitemap: https://goldrateindia.co.in/sitemap.xml

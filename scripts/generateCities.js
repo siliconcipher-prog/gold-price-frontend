@@ -43,7 +43,7 @@ cities.forEach(city => {
   const html = template
     .replace(/{{CITY}}/g, city)
     .replace(
-      /{{TITLE}}/g,
+      /{{TITLE}}/g
       `${city} Gold Price Today (24K, 22K, 18K) – Live Rates in ${city}`
     )
     .replace(
