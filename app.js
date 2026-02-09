@@ -304,33 +304,100 @@ function ensureWeightToggle() {
 }
 
 async function handleShareClick() {
-  const title = document.getElementById("pageHeading")?.textContent?.trim() || "Gold Price";
-  const text = `${title} | ${currentKarat} | ${currentWeight}g`;
-  const url = window.location.href;
+  const payload = getSharePayload();
 
   try {
     if (navigator.share) {
-      await navigator.share({ title, text, url });
+      await navigator.share(payload);
       return;
     }
-
-    if (navigator.clipboard && window.isSecureContext) {
-      await navigator.clipboard.writeText(url);
-      return;
-    }
-
-    const textarea = document.createElement("textarea");
-    textarea.value = url;
-    textarea.setAttribute("readonly", "");
-    textarea.style.position = "absolute";
-    textarea.style.left = "-9999px";
-    document.body.appendChild(textarea);
-    textarea.select();
-    document.execCommand("copy");
-    textarea.remove();
+    toggleShareMenu();
   } catch (err) {
     if (err && err.name === "AbortError") return;
+    toggleShareMenu();
   }
+}
+
+function getSharePayload() {
+  const city =
+    currentData?.city ||
+    getSelectedCity() ||
+    getCityFromURL() ||
+    "India";
+  const title = `Gold Price Today - ${city}`;
+  const insightText =
+    document.getElementById("insight")?.textContent?.trim() ||
+    `Check latest gold prices in ${city}.`;
+  const url = window.location.href;
+  const sharePrice = karat => {
+    const base = currentData?.prices?.[karat];
+    if (typeof base !== "number") return "-";
+    return formatRupee(scalePrice(base));
+  };
+
+  const lines = [
+    title,
+    "",
+    `24K: ${sharePrice("24K")}`,
+    `22K: ${sharePrice("22K")}`,
+    `18K: ${sharePrice("18K")}`,
+    "",
+    insightText,
+    "",
+    "Check gold price for your city:",
+    url
+  ];
+
+  return {
+    title,
+    text: lines.join("\n"),
+    url
+  };
+}
+
+function getShareMenu() {
+  return document.getElementById("shareMenu");
+}
+
+function getShareButton() {
+  return document.getElementById("shareBtn");
+}
+
+function setShareMenuOpen(open) {
+  const menu = getShareMenu();
+  const btn = getShareButton();
+  if (!menu || !btn) return;
+
+  menu.classList.toggle("hidden", !open);
+  btn.classList.toggle("active", open);
+  btn.setAttribute("aria-expanded", open ? "true" : "false");
+}
+
+function closeShareMenu() {
+  setShareMenuOpen(false);
+}
+
+function toggleShareMenu() {
+  const menu = getShareMenu();
+  if (!menu) return;
+  setShareMenuOpen(menu.classList.contains("hidden"));
+}
+
+async function copyText(text) {
+  if (navigator.clipboard && window.isSecureContext) {
+    await navigator.clipboard.writeText(text);
+    return;
+  }
+
+  const textarea = document.createElement("textarea");
+  textarea.value = text;
+  textarea.setAttribute("readonly", "");
+  textarea.style.position = "absolute";
+  textarea.style.left = "-9999px";
+  document.body.appendChild(textarea);
+  textarea.select();
+  document.execCommand("copy");
+  textarea.remove();
 }
 
 function ensureShareButton() {
@@ -347,10 +414,12 @@ function ensureShareButton() {
   btn.className = "share-btn";
   btn.type = "button";
   btn.setAttribute("aria-label", "Share this page");
+  btn.setAttribute("aria-expanded", "false");
+  btn.setAttribute("aria-haspopup", "menu");
 
   const icon = document.createElement("span");
   icon.className = "share-icon";
-  icon.textContent = "\u2197";
+  icon.textContent = "\u2934";
   btn.appendChild(icon);
   btn.appendChild(document.createTextNode(" Share"));
 
@@ -360,8 +429,45 @@ function ensureShareButton() {
   note.className = "share-note";
   note.textContent = "Share today's gold price";
 
+  const menu = document.createElement("div");
+  menu.id = "shareMenu";
+  menu.className = "share-menu hidden";
+
+  const shareXBtn = document.createElement("button");
+  shareXBtn.type = "button";
+  shareXBtn.className = "share-menu-btn";
+  shareXBtn.textContent = "Share on X";
+  shareXBtn.addEventListener("click", () => {
+    const payload = getSharePayload();
+    const intentUrl =
+      `https://x.com/intent/tweet?text=${encodeURIComponent(payload.text)}`;
+    window.open(intentUrl, "_blank", "noopener,noreferrer");
+    closeShareMenu();
+  });
+
+  const copyLinkBtn = document.createElement("button");
+  copyLinkBtn.type = "button";
+  copyLinkBtn.className = "share-menu-btn";
+  copyLinkBtn.textContent = "Copy link";
+  copyLinkBtn.addEventListener("click", async () => {
+    try {
+      await copyText(window.location.href);
+      setStatus("Link copied");
+      setTimeout(() => {
+        if (statusEl.textContent === "Link copied") setStatus("");
+      }, 1200);
+    } catch {
+      setStatus("Could not copy link");
+    } finally {
+      closeShareMenu();
+    }
+  });
+
+  menu.appendChild(shareXBtn);
+  menu.appendChild(copyLinkBtn);
   shareAction.appendChild(btn);
   shareAction.appendChild(note);
+  shareAction.appendChild(menu);
   actions.insertAdjacentElement("afterbegin", shareAction);
 }
 function showSkeleton() {

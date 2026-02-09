@@ -255,6 +255,8 @@ input {
   font-weight: 600;
   cursor: pointer;
   transition: all 0.25s ease;
+  position: relative;
+  z-index: 2;
 }
 
 .share-btn:hover {
@@ -263,11 +265,19 @@ input {
   transform: translateY(-1px);
 }
 
+.share-btn.active {
+  border-color: var(--gold);
+  color: var(--gold);
+  box-shadow: 0 0 0 3px var(--gold-soft);
+}
+
 .share-action {
-  display: flex;
+  display: inline-flex;
   flex-direction: column;
   align-items: center;
-  gap: 4px;
+  gap: 6px;
+  position: relative;
+  margin-bottom: 2px;
 }
 
 .share-icon {
@@ -279,6 +289,59 @@ input {
   opacity: 0.6;
   color: var(--text-muted);
   letter-spacing: 0.2px;
+}
+
+.share-menu {
+  position: absolute;
+  top: calc(100% + 10px);
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 168px;
+  padding: 10px;
+  border-radius: 14px;
+  border: 1px solid rgba(212, 175, 55, 0.28);
+  background: linear-gradient(180deg, #171b23, #121721);
+  box-shadow: var(--shadow-medium);
+  z-index: 5;
+}
+
+.share-menu::before {
+  content: "";
+  position: absolute;
+  top: -6px;
+  left: 50%;
+  width: 10px;
+  height: 10px;
+  transform: translateX(-50%) rotate(45deg);
+  border-top: 1px solid rgba(212, 175, 55, 0.28);
+  border-left: 1px solid rgba(212, 175, 55, 0.28);
+  background: #171b23;
+}
+
+.share-menu.hidden {
+  display: none;
+}
+
+.share-menu-btn {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  background: linear-gradient(180deg, #131824, #101522);
+  color: var(--text-main);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.share-menu-btn:hover {
+  border-color: var(--gold);
+  color: var(--gold);
+  transform: translateY(-1px);
 }
 
 input::placeholder {
