@@ -17,6 +17,7 @@ const TIMEOUT_MS = 8000;
 let chart;
 let currentKarat = "24K";
 let currentWeight = 1;
+let currentRangeDays = 7;
 let currentData = null;
 let isLoading = false;
 let lastWeightToggleAt = 0;
@@ -37,12 +38,12 @@ const INSIGHT_VARIANT = "A";
 
 const DAILY_INSIGHT_COPY = {
   A: {
-    UP: city => `Gold prices moved higher today in ${city}.`,
-    DOWN: city => `Gold prices declined today in ${city}.`,
-    FLAT: city => `Gold prices remained largely unchanged today in ${city}.`,
-    HIGH: city => `Gold prices are at a 7-day high in ${city}.`,
-    LOW: city => `Gold prices are at a 7-day low in ${city}.`,
-    FALLBACK: city => `Showing the latest available gold price for ${city}.`
+    UP: city => `\uD83D\uDCC8 Gold prices moved higher today in ${city}.`,
+    DOWN: city => `\uD83D\uDCC9 Gold prices declined today in ${city}.`,
+    FLAT: city => `\u2796 Gold prices remained largely unchanged today in ${city}.`,
+    HIGH: city => `\uD83D\uDCC8 Gold prices are at a 7-day high in ${city}.`,
+    LOW: city => `\uD83D\uDCC9 Gold prices are at a 7-day low in ${city}.`,
+    FALLBACK: city => `\u2139\uFE0F Showing the latest available gold price for ${city}.`
   }
 };
 
@@ -55,6 +56,7 @@ const statusEl = document.getElementById("status");
 const suggestionBox = document.getElementById("citySuggestions");
 const refreshBtn = document.getElementById("refreshBtn");
 const WEIGHT_OPTIONS = [1, 8];
+const CHART_RANGE_OPTIONS = [7, 30];
 const PRICE_KEYS = ["24K", "22K", "18K"];
 
 /* =========================
@@ -160,6 +162,7 @@ function setLoading(flag) {
   refreshBtn.disabled = flag;
   refreshBtn.classList.toggle("loading", flag);
   setWeightToggleDisabled(flag || isWeightToggleLocked);
+  setRangeToggleDisabled(flag);
 }
 
 function formatRupee(value) {
@@ -185,6 +188,12 @@ function scalePrice(value) {
 function setWeightToggleDisabled(flag) {
   document.querySelectorAll(".weight-btn").forEach(btn => {
     btn.disabled = flag || isWeightToggleLocked;
+  });
+}
+
+function setRangeToggleDisabled(flag) {
+  document.querySelectorAll(".range-btn").forEach(btn => {
+    btn.disabled = flag;
   });
 }
 
@@ -243,11 +252,25 @@ function updateWeightToggleUI() {
   });
 }
 
+function ensureInsightActions() {
+  let actions = document.getElementById("insightActions");
+  if (actions) return actions;
+
+  const insightEl = document.getElementById("insight");
+  if (!insightEl) return null;
+
+  actions = document.createElement("div");
+  actions.id = "insightActions";
+  actions.className = "insight-actions";
+  insightEl.insertAdjacentElement("afterend", actions);
+  return actions;
+}
+
 function ensureWeightToggle() {
   if (document.getElementById("weightToggle")) return;
 
-  const controls = document.querySelector(".controls");
-  if (!controls) return;
+  const actions = ensureInsightActions();
+  if (!actions) return;
 
   const toggle = document.createElement("div");
   toggle.id = "weightToggle";
@@ -286,18 +309,79 @@ function ensureWeightToggle() {
     toggle.appendChild(btn);
   });
 
-  controls.insertAdjacentElement("afterend", toggle);
+  actions.insertAdjacentElement("beforeend", toggle);
+}
+
+async function handleShareClick() {
+  const title = document.getElementById("pageHeading")?.textContent?.trim() || "Gold Price";
+  const text = `${title} | ${currentKarat} | ${currentWeight}g`;
+  const url = window.location.href;
+
+  try {
+    if (navigator.share) {
+      await navigator.share({ title, text, url });
+      return;
+    }
+
+    if (navigator.clipboard && window.isSecureContext) {
+      await navigator.clipboard.writeText(url);
+      return;
+    }
+
+    const textarea = document.createElement("textarea");
+    textarea.value = url;
+    textarea.setAttribute("readonly", "");
+    textarea.style.position = "absolute";
+    textarea.style.left = "-9999px";
+    document.body.appendChild(textarea);
+    textarea.select();
+    document.execCommand("copy");
+    textarea.remove();
+  } catch (err) {
+    if (err && err.name === "AbortError") return;
+  }
+}
+
+function ensureShareButton() {
+  if (document.getElementById("shareBtn")) return;
+
+  const actions = ensureInsightActions();
+  if (!actions) return;
+
+  const shareAction = document.createElement("div");
+  shareAction.className = "share-action";
+
+  const btn = document.createElement("button");
+  btn.id = "shareBtn";
+  btn.className = "share-btn";
+  btn.type = "button";
+  btn.setAttribute("aria-label", "Share this page");
+
+  const icon = document.createElement("span");
+  icon.className = "share-icon";
+  icon.textContent = "\u2197";
+  btn.appendChild(icon);
+  btn.appendChild(document.createTextNode(" Share"));
+
+  btn.addEventListener("click", handleShareClick);
+
+  const note = document.createElement("span");
+  note.className = "share-note";
+  note.textContent = "Share today's gold price";
+
+  shareAction.appendChild(btn);
+  shareAction.appendChild(note);
+  actions.insertAdjacentElement("afterbegin", shareAction);
 }
 function showSkeleton() {
   document.getElementById("prices").classList.remove("hidden");
-  document.querySelectorAll(".price-card")
-    .forEach(c => c.classList.add("skeleton"));
-  document.getElementById("chartWrapper").classList.add("hidden");
+  const chartWrapper = document.getElementById("chartWrapper");
+  chartWrapper.classList.remove("hidden");
+  chartWrapper.classList.add("chart-loading");
 }
 
 function hideSkeleton() {
-  document.querySelectorAll(".price-card")
-    .forEach(c => c.classList.remove("skeleton"));
+  document.getElementById("chartWrapper").classList.remove("chart-loading");
 }
 
 /* =========================
@@ -420,6 +504,17 @@ function generateDailyInsight(city, history, karat) {
   if (today > yesterday) return COPY.UP(city);
   if (today < yesterday) return COPY.DOWN(city);
   return COPY.FLAT(city);
+}
+
+function formatUpdatedTimestamp(value) {
+  const date = new Date(value);
+  return new Intl.DateTimeFormat("en-IN", {
+    day: "2-digit",
+    month: "short",
+    hour: "numeric",
+    minute: "2-digit",
+    hour12: true
+  }).format(date);
 }
 
 function updateBreadcrumb(city) {
@@ -582,10 +677,11 @@ function renderData(data, options = {}) {
     }
   });
 
-  renderChart(getScaledHistory(data.history, currentKarat));
+  renderCurrentChart();
 
-  document.getElementById("updated").textContent =
-    `Updated: ${new Date(data.last_updated).toLocaleString()} | Showing ${currentWeight}g`;
+  document.getElementById("updated").innerHTML =
+    `<span class="updated-main">Updated: ${formatUpdatedTimestamp(data.last_updated)}</span>` +
+    `<span class="updated-sub">Unit: ${currentWeight}g</span>`;
 }
 /* =========================
    CHART
@@ -630,6 +726,17 @@ function buildChartGradient(ctx) {
   return gradient;
 }
 
+function buildRelativeDayLabels(historyLength) {
+  const labels = [];
+
+  for (let i = 0; i < historyLength; i++) {
+    const daysAgo = historyLength - 1 - i;
+    labels.push(daysAgo === 0 ? "Today" : `${daysAgo}d`);
+  }
+
+  return labels;
+}
+
 function getChartUnitText() {
   return `Price (\u20B9 / ${currentWeight}g)`;
 }
@@ -654,6 +761,67 @@ function ensureChartUnitLabel() {
   return label;
 }
 
+function getRangeHistory(history) {
+  if (!history || !history.length) return [];
+  return history.slice(-currentRangeDays);
+}
+
+function updateChartTitle() {
+  const wrapper = document.getElementById("chartWrapper");
+  if (!wrapper) return;
+  wrapper.dataset.chartTitle = `${currentRangeDays}-day price trend`;
+}
+
+function updateRangeToggleUI() {
+  document.querySelectorAll(".range-btn").forEach(btn => {
+    const isActive = Number(btn.dataset.days) === currentRangeDays;
+    btn.classList.toggle("active", isActive);
+    btn.setAttribute("aria-pressed", isActive ? "true" : "false");
+  });
+}
+
+function ensureRangeToggle() {
+  if (document.getElementById("rangeToggle")) return;
+
+  const wrapper = document.getElementById("chartWrapper");
+  const canvas = document.getElementById("historyChart");
+  if (!wrapper || !canvas) return;
+
+  const toggle = document.createElement("div");
+  toggle.id = "rangeToggle";
+  toggle.className = "range-toggle";
+  toggle.setAttribute("role", "group");
+  toggle.setAttribute("aria-label", "Chart history range");
+
+  CHART_RANGE_OPTIONS.forEach(days => {
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = `range-btn${days === currentRangeDays ? " active" : ""}`;
+    btn.dataset.days = String(days);
+    btn.textContent = `${days}D`;
+    btn.setAttribute("aria-pressed", days === currentRangeDays ? "true" : "false");
+
+    btn.addEventListener("click", () => {
+      if (isLoading || currentRangeDays === days) return;
+      currentRangeDays = days;
+      updateRangeToggleUI();
+      updateChartTitle();
+      renderCurrentChart();
+    });
+
+    toggle.appendChild(btn);
+  });
+
+  canvas.insertAdjacentElement("afterend", toggle);
+}
+
+function renderCurrentChart() {
+  if (!currentData?.history?.length) return;
+  updateChartTitle();
+  const rangeHistory = getRangeHistory(currentData.history);
+  renderChart(getScaledHistory(rangeHistory, currentKarat));
+}
+
 function renderChart(history) {
   if (!history || history.length < 2) return;
 
@@ -663,7 +831,7 @@ function renderChart(history) {
   const ctx = document.getElementById("historyChart").getContext("2d");
   const prices = history.map(h => h.price);
   const bounds = computeYAxisBounds(prices);
-  const labels = history.map(h => h.date);
+  const labels = buildRelativeDayLabels(history.length);
 
   if (!chart) {
     chart = new Chart(ctx, {
@@ -718,6 +886,9 @@ function renderChart(history) {
           x: {
             grid: { display: false },
             ticks: {
+              autoSkip: false,
+              maxRotation: 0,
+              minRotation: 0,
               padding: 8
             }
           },
@@ -736,6 +907,7 @@ function renderChart(history) {
         }
       }
     });
+    document.getElementById("chartWrapper").classList.remove("chart-loading");
     return;
   }
 
@@ -754,6 +926,9 @@ function renderChart(history) {
   chart.options.layout.padding.right = 8;
   chart.options.layout.padding.bottom = 4;
   chart.options.layout.padding.left = 6;
+  chart.options.scales.x.ticks.autoSkip = false;
+  chart.options.scales.x.ticks.maxRotation = 0;
+  chart.options.scales.x.ticks.minRotation = 0;
   chart.options.scales.x.ticks.padding = 8;
   chart.options.scales.y.ticks.stepSize = bounds.step;
   chart.options.scales.y.ticks.maxTicksLimit = 6;
@@ -762,6 +937,7 @@ function renderChart(history) {
   chart.options.scales.y.min = bounds.min;
   chart.options.scales.y.max = bounds.max;
   chart.update();
+  document.getElementById("chartWrapper").classList.remove("chart-loading");
 }
 
 /* =========================
@@ -775,7 +951,7 @@ document.querySelectorAll(".karat-btn").forEach(btn => {
 
     currentKarat = btn.dataset.karat;
     if (currentData) {
-      renderChart(getScaledHistory(currentData.history, currentKarat));
+      renderCurrentChart();
     }
   };
 });
@@ -797,6 +973,10 @@ refreshBtn.addEventListener("click", fetchPrice);
 
 document.addEventListener("DOMContentLoaded", () => {
   ensureWeightToggle();
+  ensureShareButton();
+  ensureRangeToggle();
+  updateChartTitle();
+  updateRangeToggleUI();
   let city;
 
   if (isHomePage()) {
