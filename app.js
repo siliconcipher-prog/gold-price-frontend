@@ -17,7 +17,6 @@ const TIMEOUT_MS = 8000;
 let chart;
 let currentKarat = "24K";
 let currentWeight = 1;
-let currentRangeDays = 7;
 let currentData = null;
 let isLoading = false;
 let lastWeightToggleAt = 0;
@@ -56,7 +55,6 @@ const statusEl = document.getElementById("status");
 const suggestionBox = document.getElementById("citySuggestions");
 const refreshBtn = document.getElementById("refreshBtn");
 const WEIGHT_OPTIONS = [1, 8];
-const CHART_RANGE_OPTIONS = [7, 30];
 const PRICE_KEYS = ["24K", "22K", "18K"];
 
 /* =========================
@@ -162,7 +160,6 @@ function setLoading(flag) {
   refreshBtn.disabled = flag;
   refreshBtn.classList.toggle("loading", flag);
   setWeightToggleDisabled(flag || isWeightToggleLocked);
-  setRangeToggleDisabled(flag);
 }
 
 function formatRupee(value) {
@@ -188,12 +185,6 @@ function scalePrice(value) {
 function setWeightToggleDisabled(flag) {
   document.querySelectorAll(".weight-btn").forEach(btn => {
     btn.disabled = flag || isWeightToggleLocked;
-  });
-}
-
-function setRangeToggleDisabled(flag) {
-  document.querySelectorAll(".range-btn").forEach(btn => {
-    btn.disabled = flag;
   });
 }
 
@@ -761,65 +752,9 @@ function ensureChartUnitLabel() {
   return label;
 }
 
-function getRangeHistory(history) {
-  if (!history || !history.length) return [];
-  return history.slice(-currentRangeDays);
-}
-
-function updateChartTitle() {
-  const wrapper = document.getElementById("chartWrapper");
-  if (!wrapper) return;
-  wrapper.dataset.chartTitle = `${currentRangeDays}-day price trend`;
-}
-
-function updateRangeToggleUI() {
-  document.querySelectorAll(".range-btn").forEach(btn => {
-    const isActive = Number(btn.dataset.days) === currentRangeDays;
-    btn.classList.toggle("active", isActive);
-    btn.setAttribute("aria-pressed", isActive ? "true" : "false");
-  });
-}
-
-function ensureRangeToggle() {
-  if (document.getElementById("rangeToggle")) return;
-
-  const wrapper = document.getElementById("chartWrapper");
-  const canvas = document.getElementById("historyChart");
-  if (!wrapper || !canvas) return;
-
-  const toggle = document.createElement("div");
-  toggle.id = "rangeToggle";
-  toggle.className = "range-toggle";
-  toggle.setAttribute("role", "group");
-  toggle.setAttribute("aria-label", "Chart history range");
-
-  CHART_RANGE_OPTIONS.forEach(days => {
-    const btn = document.createElement("button");
-    btn.type = "button";
-    btn.className = `range-btn${days === currentRangeDays ? " active" : ""}`;
-    btn.dataset.days = String(days);
-    btn.textContent = `${days}D`;
-    btn.setAttribute("aria-pressed", days === currentRangeDays ? "true" : "false");
-
-    btn.addEventListener("click", () => {
-      if (isLoading || currentRangeDays === days) return;
-      currentRangeDays = days;
-      updateRangeToggleUI();
-      updateChartTitle();
-      renderCurrentChart();
-    });
-
-    toggle.appendChild(btn);
-  });
-
-  canvas.insertAdjacentElement("afterend", toggle);
-}
-
 function renderCurrentChart() {
   if (!currentData?.history?.length) return;
-  updateChartTitle();
-  const rangeHistory = getRangeHistory(currentData.history);
-  renderChart(getScaledHistory(rangeHistory, currentKarat));
+  renderChart(getScaledHistory(currentData.history, currentKarat));
 }
 
 function renderChart(history) {
@@ -974,9 +909,6 @@ refreshBtn.addEventListener("click", fetchPrice);
 document.addEventListener("DOMContentLoaded", () => {
   ensureWeightToggle();
   ensureShareButton();
-  ensureRangeToggle();
-  updateChartTitle();
-  updateRangeToggleUI();
   let city;
 
   if (isHomePage()) {
