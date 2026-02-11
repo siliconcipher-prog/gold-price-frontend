@@ -304,11 +304,9 @@ function ensureWeightToggle() {
 }
 
 async function handleShareClick() {
-  const payload = getSharePayload();
-
   try {
-    if (navigator.share) {
-      await navigator.share(payload);
+    if (shouldUseNativeShare()) {
+      await navigator.share(getNativeSharePayload());
       return;
     }
     toggleShareMenu();
@@ -318,7 +316,17 @@ async function handleShareClick() {
   }
 }
 
-function getSharePayload() {
+function shouldUseNativeShare() {
+  if (!navigator.share) return false;
+
+  const coarsePointer =
+    typeof window.matchMedia === "function" &&
+    window.matchMedia("(pointer: coarse)").matches;
+  const mobileUA = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent || "");
+  return coarsePointer || mobileUA;
+}
+
+function getShareContent() {
   const city =
     currentData?.city ||
     getSelectedCity() ||
@@ -365,8 +373,7 @@ function getSharePayload() {
     return ` (${prefix}${formatRupee(Math.abs(scalePrice(diff)))})`;
   };
   const unitLabel = `${currentWeight}g`;
-
-  const lines = [
+  const linesWithoutUrl = [
     title,
     "",
     `Rate shown per ${unitLabel}`,
@@ -377,15 +384,31 @@ function getSharePayload() {
     "",
     insightText,
     "",
-    "Check gold price for your city:",
-    url
+    "Check gold price for your city:"
   ];
 
   return {
     title,
-    text: lines.join("\n"),
+    city,
+    unitLabel,
+    linesWithoutUrl,
     url
   };
+}
+
+function getNativeSharePayload() {
+  const content = getShareContent();
+
+  return {
+    title: content.title,
+    text: content.linesWithoutUrl.join("\n"),
+    url: content.url
+  };
+}
+
+function getExtendedShareText() {
+  const content = getShareContent();
+  return `${content.linesWithoutUrl.join("\n")}\n${content.url}`;
 }
 
 function getCityGoldHashtag(city) {
@@ -482,7 +505,7 @@ function ensureShareButton() {
   shareXBtn.className = "share-menu-btn";
   shareXBtn.textContent = "Share on X";
   shareXBtn.addEventListener("click", () => {
-    const payload = getSharePayload();
+    const shareText = getExtendedShareText();
     const city =
       currentData?.city ||
       getSelectedCity() ||
@@ -492,7 +515,7 @@ function ensureShareButton() {
       `#GoldPrice #GoldRateToday ${getCityGoldHashtag(city)}`;
     const intentUrl =
       `https://x.com/intent/tweet?text=${encodeURIComponent(
-        `${payload.text}\n\n${hashtags}`
+        `${shareText}\n\n${hashtags}`
       )}`;
     window.open(intentUrl, "_blank", "noopener,noreferrer");
     closeShareMenu();
