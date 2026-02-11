@@ -319,11 +319,11 @@ async function handleShareClick() {
 function shouldUseNativeShare() {
   if (!navigator.share) return false;
 
-  const coarsePointer =
-    typeof window.matchMedia === "function" &&
-    window.matchMedia("(pointer: coarse)").matches;
-  const mobileUA = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent || "");
-  return coarsePointer || mobileUA;
+  const ua = navigator.userAgent || "";
+  const mobileUA = /Android|iPhone|iPad|iPod/i.test(ua);
+  const iPadDesktopMode =
+    navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1;
+  return mobileUA || iPadDesktopMode;
 }
 
 function getShareContent() {
@@ -539,7 +539,38 @@ function ensureShareButton() {
     }
   });
 
+  const copyUpdateBtn = document.createElement("button");
+  copyUpdateBtn.type = "button";
+  copyUpdateBtn.className = "share-menu-btn";
+  copyUpdateBtn.textContent = "Copy update";
+  copyUpdateBtn.addEventListener("click", async () => {
+    try {
+      await copyText(getExtendedShareText());
+      setStatus("Update copied");
+      setTimeout(() => {
+        if (statusEl.textContent === "Update copied") setStatus("");
+      }, 1400);
+    } catch {
+      setStatus("Could not copy update");
+    } finally {
+      closeShareMenu();
+    }
+  });
+
+  const shareWhatsAppBtn = document.createElement("button");
+  shareWhatsAppBtn.type = "button";
+  shareWhatsAppBtn.className = "share-menu-btn";
+  shareWhatsAppBtn.textContent = "Share on WhatsApp";
+  shareWhatsAppBtn.addEventListener("click", () => {
+    const waUrl =
+      `https://wa.me/?text=${encodeURIComponent(getExtendedShareText())}`;
+    window.open(waUrl, "_blank", "noopener,noreferrer");
+    closeShareMenu();
+  });
+
   menu.appendChild(shareXBtn);
+  menu.appendChild(shareWhatsAppBtn);
+  menu.appendChild(copyUpdateBtn);
   menu.appendChild(copyLinkBtn);
   shareAction.appendChild(btn);
   shareAction.appendChild(note);
