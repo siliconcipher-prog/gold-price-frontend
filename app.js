@@ -330,24 +330,50 @@ function getSharePayload() {
     `Check latest gold prices in ${city}.`;
   const url = window.location.href;
   const sharePrice = karat => {
-    const base = currentData?.prices?.[karat];
+    const base = getKaratValue(currentData?.prices, karat);
     if (typeof base !== "number") return "-";
     return formatRupee(scalePrice(base));
   };
-  const change24 = calculateChange(currentData?.history, "24K");
-  const has24KMovement = change24 && Number(change24.diff) !== 0;
-  const movement24K = has24KMovement
-    ? ` (${change24.diff > 0 ? "+" : "-"}${formatRupee(
-        Math.abs(scalePrice(change24.diff))
-      )})`
-    : "";
+  const resolveDiff = karat => {
+    const historyChange = calculateChange(currentData?.history, karat);
+    if (historyChange && !Number.isNaN(Number(historyChange.diff))) {
+      return Number(historyChange.diff);
+    }
+
+    // Fallback when history may not include every karat key.
+    const changeSources = [
+      currentData?.changes,
+      currentData?.change,
+      currentData?.daily_change,
+      currentData?.price_change
+    ];
+
+    for (const source of changeSources) {
+      const diff = getKaratValue(source, karat);
+      if (diff !== null && !Number.isNaN(Number(diff))) {
+        return Number(diff);
+      }
+    }
+
+    return null;
+  };
+  const formatChange = karat => {
+    const diff = resolveDiff(karat);
+    if (diff === null) return "";
+    if (diff === 0) return " (\u00B1\u20B90)";
+    const prefix = diff > 0 ? "+" : "-";
+    return ` (${prefix}${formatRupee(Math.abs(scalePrice(diff)))})`;
+  };
+  const unitLabel = `${currentWeight}g`;
 
   const lines = [
     title,
     "",
-    `24K: ${sharePrice("24K")}${movement24K}`,
-    `22K: ${sharePrice("22K")}`,
-    `18K: ${sharePrice("18K")}`,
+    `Rate shown per ${unitLabel}`,
+    "",
+    `24K (${unitLabel}): ${sharePrice("24K")}${formatChange("24K")}`,
+    `22K (${unitLabel}): ${sharePrice("22K")}${formatChange("22K")}`,
+    `18K (${unitLabel}): ${sharePrice("18K")}${formatChange("18K")}`,
     "",
     insightText,
     "",
@@ -360,6 +386,17 @@ function getSharePayload() {
     text: lines.join("\n"),
     url
   };
+}
+
+function getCityGoldHashtag(city) {
+  const normalized = (city || "India")
+    .replace(/[^a-zA-Z\s]/g, " ")
+    .trim()
+    .split(/\s+/)
+    .map(part => part.charAt(0).toUpperCase() + part.slice(1).toLowerCase())
+    .join("");
+
+  return `#${normalized || "India"}Gold`;
 }
 
 function getShareMenu() {
@@ -446,8 +483,17 @@ function ensureShareButton() {
   shareXBtn.textContent = "Share on X";
   shareXBtn.addEventListener("click", () => {
     const payload = getSharePayload();
+    const city =
+      currentData?.city ||
+      getSelectedCity() ||
+      getCityFromURL() ||
+      "India";
+    const hashtags =
+      `#GoldPrice #GoldRateToday ${getCityGoldHashtag(city)}`;
     const intentUrl =
-      `https://x.com/intent/tweet?text=${encodeURIComponent(payload.text)}`;
+      `https://x.com/intent/tweet?text=${encodeURIComponent(
+        `${payload.text}\n\n${hashtags}`
+      )}`;
     window.open(intentUrl, "_blank", "noopener,noreferrer");
     closeShareMenu();
   });
@@ -586,13 +632,42 @@ cityInput.addEventListener("keydown", e => {
 function calculateChange(history, karat) {
   if (!history || history.length < 2) return null;
 
-  const prev = history[history.length - 2][karat];
-  const curr = history[history.length - 1][karat];
-  if (!prev || !curr) return null;
+  const prev = getKaratValue(history[history.length - 2], karat);
+  const curr = getKaratValue(history[history.length - 1], karat);
+  if (prev === null || curr === null) return null;
 
   const diff = curr - prev;
   const percent = ((diff / prev) * 100).toFixed(2);
   return { diff, percent };
+}
+
+function getKaratValue(source, karat) {
+  if (!source || !karat) return null;
+
+  const key = String(karat);
+  const compact = key.replace(/\s+/g, "");
+  const lower = compact.toLowerCase();
+  const digits = lower.replace(/[^0-9]/g, "");
+  const candidates = [
+    key,
+    compact,
+    lower,
+    compact.toUpperCase(),
+    digits,
+    `${digits}k`,
+    `${digits}K`,
+    `k${digits}`,
+    `K${digits}`
+  ];
+
+  for (const candidate of candidates) {
+    if (Object.prototype.hasOwnProperty.call(source, candidate)) {
+      const value = Number(source[candidate]);
+      if (!Number.isNaN(value)) return value;
+    }
+  }
+
+  return null;
 }
 
 function generateDailyInsight(city, history, karat) {
