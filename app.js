@@ -324,7 +324,7 @@ function getSharePayload() {
     getSelectedCity() ||
     getCityFromURL() ||
     "India";
-  const title = `Gold Price Today - ${city}`;
+  const title = `Gold Price Today in ${city}`;
   const insightText =
     document.getElementById("insight")?.textContent?.trim() ||
     `Check latest gold prices in ${city}.`;
@@ -334,11 +334,18 @@ function getSharePayload() {
     if (typeof base !== "number") return "-";
     return formatRupee(scalePrice(base));
   };
+  const change24 = calculateChange(currentData?.history, "24K");
+  const has24KMovement = change24 && Number(change24.diff) !== 0;
+  const movement24K = has24KMovement
+    ? ` (${change24.diff > 0 ? "+" : "-"}${formatRupee(
+        Math.abs(scalePrice(change24.diff))
+      )})`
+    : "";
 
   const lines = [
     title,
     "",
-    `24K: ${sharePrice("24K")}`,
+    `24K: ${sharePrice("24K")}${movement24K}`,
     `22K: ${sharePrice("22K")}`,
     `18K: ${sharePrice("18K")}`,
     "",
@@ -1044,6 +1051,13 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
   fetchPrice();
+});
+
+document.addEventListener("click", e => {
+  const shareAction = e.target.closest(".share-action");
+  if (!shareAction) {
+    closeShareMenu();
+  }
 });
 
 
