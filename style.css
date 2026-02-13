@@ -378,6 +378,8 @@ input:focus {
   display: flex;
   align-items: center;
   justify-content: center;
+  position: relative;
+  line-height: 1;
 
   transition: all 0.3s ease;
   box-shadow: var(--shadow-soft);
@@ -396,8 +398,21 @@ input:focus {
 }
 
 .refresh-btn.loading {
-  animation: spin 0.8s linear infinite;
-  opacity: 0.7;
+  opacity: 0.85;
+  color: transparent;
+}
+
+.refresh-btn.loading::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 2px solid rgba(212, 175, 55, 0.3);
+  border-top-color: var(--gold);
+  animation: spinCentered 0.75s linear infinite;
 }
 
 /* =========================
@@ -1089,6 +1104,11 @@ input:focus {
   to { transform: rotate(360deg); }
 }
 
+@keyframes spinCentered {
+  from { transform: translate(-50%, -50%) rotate(0deg); }
+  to { transform: translate(-50%, -50%) rotate(360deg); }
+}
+
 @keyframes shimmer {
   0% { left: -100%; }
   100% { left: 100%; }
@@ -1229,8 +1249,14 @@ input:focus {
   }
 
   .refresh-btn.loading {
-  pointer-events: none;
-}
+    pointer-events: none;
+  }
+
+  .refresh-btn.loading::after {
+    width: 14px;
+    height: 14px;
+    border-width: 1.8px;
+  }
 
 
   .autocomplete {
