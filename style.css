@@ -675,6 +675,7 @@ input:focus {
    CHART
 ========================= */
 .chart-wrapper {
+  position: relative;
   margin-top: 24px;
   padding: 20px;
   background: linear-gradient(135deg, var(--card-bg), var(--card-bg-soft));
@@ -833,15 +834,15 @@ input:focus {
   position: absolute;
   left: 20px;
   right: 20px;
-  top: 98px;
-  bottom: 20px;
-  border-radius: 14px;
+  top: 70px;
+  bottom: 60px;
+  border-radius: 16px;
   border: 1px solid var(--border-soft);
   background: linear-gradient(
     90deg,
-    rgba(255, 255, 255, 0.03) 0%,
-    rgba(255, 255, 255, 0.08) 50%,
-    rgba(255, 255, 255, 0.03) 100%
+    rgba(255,255,255,0.03) 0%,
+    rgba(255,255,255,0.08) 50%,
+    rgba(255,255,255,0.03) 100%
   );
   background-size: 200% 100%;
   animation: loading 1.2s infinite;
@@ -1587,7 +1588,9 @@ input:focus {
 .insight-badges {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
+  justify-content: center;
+  gap: 6px;
+  margin-top: 12px;
 }
 
 .badge {
@@ -1622,6 +1625,187 @@ input:focus {
   background: rgba(234,179,8,0.12);
   color: #eab308;
   border-color: rgba(234,179,8,0.3);
+}
+
+@media (max-width: 480px) {
+  .badge {
+    font-size: 10px;
+    padding: 5px 10px;
+  }
+}
+
+.estimator {
+  margin-top: 40px;
+  padding: 22px;
+  border-radius: 20px;
+  background: rgba(255,255,255,0.02);
+  border: 1px solid rgba(255,255,255,0.05);
+}
+
+.est-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.estimator h3 {
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+}
+
+.est-mode {
+  display: flex;
+  gap: 6px;
+}
+
+.est-btn {
+  padding: 5px 12px;
+  font-size: 11px;
+  font-weight: 600;
+  border-radius: 999px;
+  background: transparent;
+  border: 1px solid rgba(255,255,255,0.08);
+  color: #d1d5db;
+  cursor: pointer;
+}
+
+.est-btn.active {
+  background: #d4af37;
+  color: #000;
+}
+
+.est-body {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.est-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.est-field label {
+  font-size: 11px;
+  color: #9ca3af;
+  letter-spacing: 0.2px;
+}
+
+.est-body input {
+  width: 100%;
+  box-sizing: border-box;
+  min-width: 0;
+  padding: 9px 12px;
+  border-radius: 12px;
+  border: 1px solid rgba(255,255,255,0.1);
+  background: #11141a;
+  color: #fff;
+  font-size: 13px;
+}
+
+.est-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+}
+
+@media (max-width: 640px) {
+  .est-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.est-breakdown {
+  margin-top: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 13px;
+  opacity: 0;
+  transform: translateY(-6px);
+  transition: opacity 0.25s ease, transform 0.25s ease;
+}
+
+.est-breakdown.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.est-breakdown div {
+  display: flex;
+  justify-content: space-between;
+  opacity: 0.85;
+}
+
+.est-breakdown .subtotal {
+  border-top: 1px solid rgba(255,255,255,0.08);
+  padding-top: 6px;
+}
+
+.est-breakdown .final {
+  margin-top: 6px;
+  font-weight: 700;
+  font-size: 15px;
+  color: #d4af37;
+}
+
+.est-action {
+  margin-top: 10px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  font-size: 11px;
+  border: 1px solid rgba(255,255,255,0.1);
+  background: transparent;
+  color: #d1d5db;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.est-action:hover {
+  background: rgba(255,255,255,0.05);
+}
+
+.est-modal {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.6);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 100;
+}
+
+.est-modal.hidden {
+  display: none;
+}
+
+.est-card {
+  padding: 20px;
+  border-radius: 18px;
+  background: #11141a;
+  border: 1px solid rgba(255,255,255,0.08);
+  width: 280px;
+  text-align: center;
+}
+
+.est-final {
+  margin-top: 6px;
+  padding: 10px;
+  border-radius: 14px;
+  background: linear-gradient(135deg, rgba(212,175,55,0.12), rgba(212,175,55,0.03));
+  border: 1px solid rgba(212,175,55,0.25);
+  font-weight: 700;
+  font-size: 15px;
+  text-align: center;
+  color: #d4af37;
+}
+
+.hidden {
+  display: none;
 }
 /* =========================
    END OF STYLE.CSS

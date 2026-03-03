@@ -18,6 +18,7 @@ let chart;
 let currentKarat = "24K";
 let currentWeight = 1;
 let currentRange = 7;
+let currentPrices = null;
 let currentData = null;
 let isLoading = false;
 let lastWeightToggleAt = 0;
@@ -944,6 +945,7 @@ if (cityInput && !getSelectedCity()) {
 
   if (smoothRange) {
     setStatus("");
+    document.getElementById("chartWrapper").classList.add("chart-loading");
     setRangeButtonsLoading(true);
   } else {
     setLoading(true);
@@ -1013,6 +1015,8 @@ if (
       priceAbortController = null;
     }
     setRangeButtonsLoading(false);
+    document.getElementById("chartWrapper")
+      .classList.remove("chart-loading");
     if (!smoothRange) {
       setLoading(false);
     }
@@ -1120,6 +1124,9 @@ function renderData(data, options = {}) {
       el.className = "change down";
     }
   });
+  currentPrices = data.prices;
+  updateBasicCalc();
+  updateAdvancedCalc();
 
   renderCurrentChart();
 
@@ -1170,15 +1177,14 @@ function buildChartGradient(ctx) {
   return gradient;
 }
 
-function buildRelativeDayLabels(historyLength) {
-  const labels = [];
-
-  for (let i = 0; i < historyLength; i++) {
-    const daysAgo = historyLength - 1 - i;
-    labels.push(daysAgo === 0 ? "Today" : `${daysAgo}d`);
-  }
-
-  return labels;
+function buildDateLabels(history) {
+  return history.map(item => {
+    const d = new Date(item.date);
+    return new Intl.DateTimeFormat("en-IN", {
+      day: "2-digit",
+      month: "short"
+    }).format(d);
+  });
 }
 
 function getChartUnitText() {
@@ -1219,7 +1225,7 @@ function renderChart(history) {
   const ctx = document.getElementById("historyChart").getContext("2d");
   const prices = history.map(h => h.price);
   const bounds = computeYAxisBounds(prices);
-  const labels = buildRelativeDayLabels(history.length);
+  const labels = buildDateLabels(currentData.history);
 
   if (!chart) {
     chart = new Chart(ctx, {
@@ -1274,7 +1280,8 @@ function renderChart(history) {
           x: {
             grid: { display: false },
             ticks: {
-              autoSkip: false,
+              autoSkip: true,
+              maxTicksLimit: window.innerWidth < 480 ? 4 : 8,
               maxRotation: 0,
               minRotation: 0,
               padding: 8
@@ -1314,7 +1321,9 @@ function renderChart(history) {
   chart.options.layout.padding.right = 8;
   chart.options.layout.padding.bottom = 4;
   chart.options.layout.padding.left = 6;
-  chart.options.scales.x.ticks.autoSkip = false;
+  chart.options.scales.x.ticks.autoSkip = true;
+  chart.options.scales.x.ticks.maxTicksLimit =
+    window.innerWidth < 480 ? 4 : 8;
   chart.options.scales.x.ticks.maxRotation = 0;
   chart.options.scales.x.ticks.minRotation = 0;
   chart.options.scales.x.ticks.padding = 8;
@@ -1354,6 +1363,157 @@ document.querySelectorAll(".range-btn").forEach(btn => {
     fetchPrice({ smoothRange: true });
   };
 });
+
+// Toggle Tabs
+document.querySelectorAll(".est-btn").forEach(btn => {
+  btn.onclick = () => {
+    document.querySelectorAll(".est-btn")
+      .forEach(b => b.classList.remove("active"));
+
+    btn.classList.add("active");
+
+    const mode = btn.dataset.mode;
+
+    document.getElementById("basicEstimator")
+      .classList.toggle("hidden", mode !== "basic");
+
+    document.getElementById("advancedEstimator")
+      .classList.toggle("hidden", mode !== "advanced");
+  };
+});
+
+// BASIC CALCULATOR
+function updateBasicCalc() {
+  if (!currentPrices) return;
+
+  const weight = parseFloat(document.getElementById("basicWeight").value);
+  if (!weight || weight <= 0) {
+    document.getElementById("basicResult").textContent = "—";
+    return;
+  }
+
+  const karat = document.querySelector(".karat-btn.active").dataset.karat;
+  const price = currentPrices[karat];
+
+  const total = weight * price;
+  document.getElementById("basicResult")
+    .textContent = `₹${total.toLocaleString()}`;
+}
+
+// ADVANCED CALCULATOR
+function updateAdvancedCalc() {
+  if (!currentPrices) return;
+
+  const weight = parseFloat(document.getElementById("advWeight").value);
+  const making = parseFloat(document.getElementById("makingCharge").value) || 0;
+  const waste = parseFloat(document.getElementById("wastePercent").value) || 0;
+  const gst = parseFloat(document.getElementById("gstPercent").value) || 0;
+  const breakdown = document.querySelector(".est-breakdown");
+
+  if (!weight || weight <= 0) {
+    document.getElementById("advancedResult").textContent = "—";
+    if (breakdown) {
+      breakdown.classList.add("hidden");
+      breakdown.classList.remove("visible");
+    }
+    return;
+  }
+
+  const karat = document.querySelector(".karat-btn.active").dataset.karat;
+  const price = currentPrices[karat];
+
+  const base = weight * price;
+  const makingAmount = base * (making / 100);
+  const wasteAmount = base * (waste / 100);
+
+  const subtotal = base + makingAmount + wasteAmount;
+  const gstAmount = subtotal * (gst / 100);
+  const final = subtotal + gstAmount;
+
+  document.getElementById("bdBase").textContent = `₹${base.toLocaleString()}`;
+  document.getElementById("bdMaking").textContent = `₹${makingAmount.toLocaleString()}`;
+  document.getElementById("bdWaste").textContent = `₹${wasteAmount.toLocaleString()}`;
+  document.getElementById("bdSubtotal").textContent = `₹${subtotal.toLocaleString()}`;
+  document.getElementById("bdGst").textContent = `₹${gstAmount.toLocaleString()}`;
+  document.getElementById("advancedResult")
+    .textContent = `₹${final.toLocaleString()}`;
+  if (breakdown) {
+    breakdown.classList.remove("hidden");
+    breakdown.classList.add("visible");
+  }
+}
+
+// Input listeners
+document.addEventListener("input", e => {
+  if (e.target.id === "basicWeight") updateBasicCalc();
+  if (["advWeight","makingCharge","wastePercent","gstPercent"]
+      .includes(e.target.id)) updateAdvancedCalc();
+});
+
+// Recalculate on karat switch
+document.querySelectorAll(".karat-btn").forEach(btn => {
+  btn.addEventListener("click", () => {
+    updateBasicCalc();
+    updateAdvancedCalc();
+  });
+});
+
+document.getElementById("copyEstimate")
+  ?.addEventListener("click", () => {
+
+  const final = document.getElementById("advancedResult").textContent;
+  const weight = document.getElementById("advWeight").value;
+
+  const text = `
+Gold Estimate
+Weight: ${weight}g
+Final Amount: ${final}
+`;
+
+  navigator.clipboard.writeText(text.trim());
+});
+
+document.getElementById("shareEstimate")
+  ?.addEventListener("click", () => {
+
+  const final = document.getElementById("advancedResult").textContent;
+  const weight = document.getElementById("advWeight").value;
+
+  const content = `
+Weight: ${weight}g
+Final: ${final}
+`;
+
+  document.getElementById("shareCardContent")
+    .textContent = content;
+
+  document.getElementById("estimateModal")
+    .classList.remove("hidden");
+});
+
+document.getElementById("closeEstimate")
+  ?.addEventListener("click", () => {
+  document.getElementById("estimateModal")
+    .classList.add("hidden");
+});
+
+document.getElementById("setAlert")
+  ?.addEventListener("click", () => {
+  if (!currentPrices) {
+    alert("Alert feature coming soon.");
+    return;
+  }
+
+  const karat = document.querySelector(".karat-btn.active").dataset.karat;
+  const price = currentPrices[karat];
+
+  console.log("Future alert hook:", {
+    karat,
+    threshold: price
+  });
+
+  alert("Alert feature coming soon.");
+});
 /* =========================
    INIT
 ========================= */
@@ -1373,6 +1533,11 @@ refreshBtn.addEventListener("click", fetchPrice);
 document.addEventListener("DOMContentLoaded", () => {
   ensureWeightToggle();
   ensureShareButton();
+  const insight = document.getElementById("insight");
+  const badges = document.getElementById("insightBadges");
+  if (insight && badges) {
+    insight.appendChild(badges);
+  }
   let city;
 
   if (isHomePage()) {

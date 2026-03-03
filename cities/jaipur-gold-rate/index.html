@@ -156,6 +156,64 @@
     </div>
   </div>
 
+  <section class="estimator">
+
+    <div class="est-header">
+      <h3>Jewellery Estimator</h3>
+      <div class="est-mode">
+        <button class="est-btn active" data-mode="advanced">Advanced</button>
+        <button class="est-btn" data-mode="basic">Basic</button>
+      </div>
+    </div>
+
+    <div id="basicEstimator" class="est-body hidden">
+      <div class="est-field">
+        <label for="basicWeight">Weight (grams)</label>
+        <input type="number" id="basicWeight" placeholder="Weight (grams)" />
+      </div>
+      <div class="est-final" id="basicResult">—</div>
+    </div>
+
+    <div id="advancedEstimator" class="est-body">
+
+      <div class="est-field">
+        <label for="advWeight">Weight (grams)</label>
+        <input type="number" id="advWeight" placeholder="Weight (grams)" />
+      </div>
+
+      <div class="est-grid">
+        <div class="est-field">
+          <label for="makingCharge">Making Charges (%)</label>
+          <input type="number" id="makingCharge" placeholder="Making Charges (%)" />
+        </div>
+        <div class="est-field">
+          <label for="wastePercent">Waste / Wastage (%)</label>
+          <input type="number" id="wastePercent" placeholder="Waste / Wastage (%)" />
+        </div>
+        <div class="est-field">
+          <label for="gstPercent">GST (%)</label>
+          <input type="number" id="gstPercent" value="3" placeholder="GST (%)" />
+        </div>
+      </div>
+
+      <div id="estBreakdown" class="est-breakdown hidden">
+
+        <div><span>Gold Value</span><span id="bdBase">—</span></div>
+        <div><span>Making Charges</span><span id="bdMaking">—</span></div>
+        <div><span>Waste Charges</span><span id="bdWaste">—</span></div>
+        <div class="subtotal"><span>Subtotal</span><span id="bdSubtotal">—</span></div>
+        <div><span>GST</span><span id="bdGst">—</span></div>
+        <div class="final"><span>Final Amount</span><span id="advancedResult">—</span></div>
+        <button id="copyEstimate" class="est-action">Copy Estimate</button>
+        <button id="shareEstimate" class="est-action">Share</button>
+        <button id="setAlert" class="est-action">Alert When Price Drops</button>
+
+      </div>
+
+    </div>
+
+  </section>
+
 </div>
 
 
@@ -240,6 +298,14 @@
 <script>
   window.__CITY__ = "Jaipur";
 </script>
+
+<div id="estimateModal" class="est-modal hidden">
+  <div class="est-card">
+    <h4>Gold Estimate</h4>
+    <div id="shareCardContent"></div>
+    <button id="closeEstimate">Close</button>
+  </div>
+</div>
 
 <script src="/app.js"></script>
 
