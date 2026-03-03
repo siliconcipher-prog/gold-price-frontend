@@ -1,4 +1,4 @@
-/* =========================
+﻿/* =========================
    CONFIG
 ========================= */
 
@@ -110,8 +110,22 @@ function isHomePage() {
   return window.location.pathname === "/";
 }
 
+// function getCityFromURL() {
+//   const match = window.location.pathname.match(/^\/([a-z-]+)-gold-rate$/);
+//   if (!match) return null;
+
+//   return match[1]
+//     .split("-")
+//     .map(w => w.charAt(0).toUpperCase() + w.slice(1))
+//     .join(" ");
+// }
 function getCityFromURL() {
-  const match = window.location.pathname.match(/^\/([a-z-]+)-gold-rate$/);
+  const path = window.location.pathname;
+
+  const match =
+    path.match(/^\/([a-z-]+)-gold-rate$/) ||
+    path.match(/^\/cities\/([a-z-]+)-gold-rate\/?$/);
+
   if (!match) return null;
 
   return match[1]
@@ -119,7 +133,6 @@ function getCityFromURL() {
     .map(w => w.charAt(0).toUpperCase() + w.slice(1))
     .join(" ");
 }
-
 
 
 /* =========================
@@ -831,9 +844,25 @@ if (cityInput && !getSelectedCity()) {
 const slug = data.city.toLowerCase().replace(/\s+/g, "-");
 const nextURL = slug === "india" ? "/" : `/${slug}-gold-rate`;
 
-if (window.location.pathname !== nextURL) {
-  history.pushState({}, "", nextURL);
+// If on homepage and selecting city → redirect
+if (window.location.pathname === "/" && slug !== "india") {
+  window.location.href = nextURL;
+  return;
 }
+
+// If on city page and city changed → redirect
+if (
+  window.location.pathname !== "/" &&
+  window.location.pathname !== nextURL
+) {
+  window.location.href = nextURL;
+  return;
+}
+// if (window.location.pathname !== nextURL) {
+//   history.pushState({}, "", nextURL);
+// }
+
+
 
     setStatus("");
   } catch (err) {

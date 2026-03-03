@@ -1,12 +1,18 @@
-# 1️⃣ Redirect India page to homepage (canonical cleanup)
+[build]
+  publish = "."
+
+[dev]
+  publish = "."
+
+# 1️⃣ City pages FIRST
+[[redirects]]
+  from = "/:city-gold-rate"
+  to = "/cities/:city-gold-rate/index.html"
+  status = 200
+
+# 2️⃣ India page redirect
 [[redirects]]
   from = "/india-gold-rate"
   to = "/"
   status = 301
   force = true
-
-# 2️⃣ Rewrite city pages to /cities folder (SEO-safe)
-[[redirects]]
-  from = "/:city-gold-rate"
-  to = "/cities/:city-gold-rate/index.html"
-  status = 200
