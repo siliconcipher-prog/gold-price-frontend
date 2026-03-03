@@ -827,6 +827,8 @@ function generateInsightBadges(history, karat, insightText) {
   // Volatility
   if (rangePercent > 4) {
     badges.push({ text: "HIGH VOLATILITY", type: "yellow" });
+  } else if (rangePercent < 1.5) {
+    badges.push({ text: "STABLE RANGE", type: "blue" });
   }
 
   // Reversal (3 down then up)
@@ -841,6 +843,37 @@ function generateInsightBadges(history, karat, insightText) {
   }
 
   return badges;
+}
+
+function calculateGoldScore(history, karat) {
+  if (!history || history.length < 7) return 50;
+
+  const prices = history.map(h => h[karat]);
+  const today = prices.at(-1);
+  const min = Math.min(...prices);
+  const max = Math.max(...prices);
+
+  const range = max - min || 1;
+  const position = (today - min) / range;
+
+  const prev7 = prices.at(-7);
+  const weeklyChange = ((today - prev7) / prev7) * 100;
+
+  let score = 50;
+
+  // Position weight (40%)
+  score += (0.5 - position) * 40;
+
+  // Momentum weight (40%)
+  score += weeklyChange * 2;
+
+  // Volatility penalty (20%)
+  const volatility = (range / min) * 100;
+  score -= volatility * 1.5;
+
+  score = Math.max(0, Math.min(100, Math.round(score)));
+
+  return score;
 }
 
 function formatUpdatedTimestamp(value) {
@@ -1018,29 +1051,45 @@ function renderData(data, options = {}) {
   }
   insightEl.classList.remove("hidden");
 
-  const insightText = insightEl.textContent;
-
+  const insightMeta = document.getElementById("insightMeta");
   const badgeContainer = document.getElementById("insightBadges");
-  if (badgeContainer) {
+  const scoreEl = document.getElementById("goldScore");
+
+  if (insightMeta && badgeContainer && scoreEl) {
     badgeContainer.innerHTML = "";
 
+    const insightText = insightEl.textContent;
     const badges = generateInsightBadges(
       data.history,
       "24K",
       insightText
     );
 
-    if (badges.length) {
-      badges.forEach(b => {
-        const span = document.createElement("span");
-        span.className = `badge ${b.type}`;
-        span.textContent = b.text;
-        badgeContainer.appendChild(span);
+    badges.forEach(b => {
+      const span = document.createElement("span");
+      span.className = `badge ${b.type}`;
+      span.textContent = b.text;
+      badgeContainer.appendChild(span);
+    });
+
+    const score = calculateGoldScore(data.history, "24K");
+    scoreEl.textContent = `Gold Score ${score}`;
+    scoreEl.dataset.tooltip =
+      "Gold Score reflects price position within recent range, momentum strength, and volatility. Higher score indicates relatively favorable market conditions based on recent trends.";
+    scoreEl.tabIndex = 0;
+    scoreEl.setAttribute("aria-label", `Gold Score ${score} out of 100`);
+    if (!scoreEl.dataset.tooltipBound) {
+      scoreEl.addEventListener("click", () => {
+        if (document.activeElement === scoreEl) {
+          scoreEl.blur();
+        } else {
+          scoreEl.focus();
+        }
       });
-      badgeContainer.classList.remove("hidden");
-    } else {
-      badgeContainer.classList.add("hidden");
+      scoreEl.dataset.tooltipBound = "1";
     }
+
+    insightMeta.classList.remove("hidden");
   }
 
   PRICE_KEYS.forEach(k => {

@@ -586,6 +586,62 @@ input:focus {
   opacity: 0.4;
 }
 
+.insight-block {
+  margin-top: 18px;
+}
+
+.insight-meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  margin-top: 10px;
+}
+
+.gold-score {
+  min-width: 90px;
+  padding: 8px 10px;
+  border-radius: 14px;
+  font-size: 12px;
+  font-weight: 700;
+  text-align: center;
+  background: linear-gradient(135deg, rgba(212,175,55,0.15), rgba(212,175,55,0.05));
+  border: 1px solid rgba(212,175,55,0.3);
+  color: #d4af37;
+  letter-spacing: 0.4px;
+  position: relative;
+  cursor: pointer;
+}
+
+.gold-score::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  bottom: 120%;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 220px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: #11141a;
+  border: 1px solid rgba(255,255,255,0.08);
+  color: #d1d5db;
+  font-size: 11px;
+  line-height: 1.4;
+  text-align: left;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s ease, transform 0.2s ease;
+  box-shadow: 0 12px 24px rgba(0,0,0,0.4);
+  z-index: 50;
+}
+
+.gold-score:hover::after,
+.gold-score:focus::after,
+.gold-score:focus-visible::after {
+  opacity: 1;
+  transform: translateX(-50%) translateY(-4px);
+}
+
 /* =========================
    META INFO
 ========================= */
@@ -1532,36 +1588,40 @@ input:focus {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
-  margin: 10px 0 6px;
 }
 
 .badge {
-  padding: 6px 12px;
+  padding: 6px 10px;
   border-radius: 999px;
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 700;
   letter-spacing: 0.6px;
   text-transform: uppercase;
+  border: 1px solid transparent;
 }
 
 .badge.green {
   background: rgba(34,197,94,0.12);
   color: #22c55e;
+  border-color: rgba(34,197,94,0.3);
 }
 
 .badge.red {
   background: rgba(239,68,68,0.12);
   color: #ef4444;
+  border-color: rgba(239,68,68,0.3);
 }
 
 .badge.blue {
   background: rgba(59,130,246,0.12);
   color: #3b82f6;
+  border-color: rgba(59,130,246,0.3);
 }
 
 .badge.yellow {
   background: rgba(234,179,8,0.12);
   color: #eab308;
+  border-color: rgba(234,179,8,0.3);
 }
 /* =========================
    END OF STYLE.CSS
