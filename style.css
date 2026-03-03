@@ -642,41 +642,63 @@ input:focus {
   width: fit-content;
   align-items: center;
   justify-content: center;
-  gap: 4px;
+  gap: 6px;
   margin: 12px auto 0;
-  padding: 4px;
+  padding: 5px;
   border-radius: 999px;
   border: 1px solid var(--border-soft);
-  background: linear-gradient(180deg, #161a22, #121620);
+  background: linear-gradient(180deg, #171c25, #11161f);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.05),
+    0 10px 24px rgba(0, 0, 0, 0.2);
 }
 
 .range-btn {
-  padding: 6px 12px;
+  min-width: 58px;
+  padding: 8px 14px;
   border: 1px solid transparent;
   border-radius: 999px;
   background: transparent;
   color: var(--text-muted);
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 600;
+  letter-spacing: 0.2px;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transform: translateY(0);
+  transition:
+    color 0.2s ease,
+    background-color 0.2s ease,
+    box-shadow 0.2s ease,
+    transform 0.18s ease;
 }
 
 .range-btn:hover:not(:disabled) {
   color: #d9dee7;
-  background: rgba(255, 255, 255, 0.03);
+  background: rgba(255, 255, 255, 0.06);
+  transform: translateY(-1px);
 }
 
 .range-btn.active {
   background: linear-gradient(180deg, #f3cf45, #dfb927);
   color: #101319;
   border-color: rgba(0, 0, 0, 0.08);
-  box-shadow: 0 2px 8px rgba(243, 207, 69, 0.35);
+  box-shadow: 0 4px 12px rgba(243, 207, 69, 0.35);
+  transform: translateY(-1px);
 }
 
 .range-btn:disabled {
-  opacity: 0.5;
+  opacity: 0.7;
   cursor: not-allowed;
+}
+
+.range-btn.loading {
+  animation: rangePulse 0.9s ease-in-out infinite;
+}
+
+@keyframes rangePulse {
+  0% { box-shadow: 0 2px 8px rgba(243, 207, 69, 0.2); }
+  50% { box-shadow: 0 6px 14px rgba(243, 207, 69, 0.45); }
+  100% { box-shadow: 0 2px 8px rgba(243, 207, 69, 0.2); }
 }
 
 .chart-unit-label {
@@ -1505,6 +1527,41 @@ input:focus {
   color: #b8860b;           /* your gold tone */
   text-transform: capitalize;
   letter-spacing: 0.2px;   /* subtle clarity boost */
+}
+.insight-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 10px 0 6px;
+}
+
+.badge {
+  padding: 6px 12px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+}
+
+.badge.green {
+  background: rgba(34,197,94,0.12);
+  color: #22c55e;
+}
+
+.badge.red {
+  background: rgba(239,68,68,0.12);
+  color: #ef4444;
+}
+
+.badge.blue {
+  background: rgba(59,130,246,0.12);
+  color: #3b82f6;
+}
+
+.badge.yellow {
+  background: rgba(234,179,8,0.12);
+  color: #eab308;
 }
 /* =========================
    END OF STYLE.CSS

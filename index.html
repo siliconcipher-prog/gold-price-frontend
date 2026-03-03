@@ -110,7 +110,8 @@
   <div id="status" class="status"></div>
 
     <!-- DAILY INSIGHT -->
-<div id="insight" class="daily-insight hidden"></div>
+  <div id="insight" class="daily-insight hidden"></div>
+  <div id="insightBadges" class="insight-badges hidden"></div>
 
   <!-- PRICE GRID -->
   <div id="prices" class="prices hidden">
@@ -151,6 +152,11 @@
     </div>
 
     <canvas id="historyChart" height="220"></canvas>
+    <div class="range-toggle">
+      <button class="range-btn active" data-range="7">7D</button>
+      <button class="range-btn" data-range="30">30D</button>
+      <button class="range-btn" data-range="90">90D</button>
+    </div>
   </div>
 
 </div>

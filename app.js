@@ -17,9 +17,11 @@ const TIMEOUT_MS = 8000;
 let chart;
 let currentKarat = "24K";
 let currentWeight = 1;
+let currentRange = 7;
 let currentData = null;
 let isLoading = false;
 let lastWeightToggleAt = 0;
+let priceAbortController = null;
 
 const WEIGHT_TOGGLE_DEBOUNCE_MS = 220;
 const PRICE_ANIMATION_MS = 340;
@@ -601,6 +603,13 @@ function hideSkeleton() {
   document.getElementById("chartWrapper").classList.remove("chart-loading");
 }
 
+function setRangeButtonsLoading(loading) {
+  document.querySelectorAll(".range-btn").forEach(btn => {
+    const isCurrent = Number(btn.dataset.range) === currentRange;
+    btn.classList.toggle("loading", loading && isCurrent);
+  });
+}
+
 /* =========================
    AUTOCOMPLETE (FIXED)
 ========================= */
@@ -738,18 +747,100 @@ function getKaratValue(source, karat) {
 }
 
 function generateDailyInsight(city, history, karat) {
-  const COPY = DAILY_INSIGHT_COPY[INSIGHT_VARIANT];
-  if (!history || history.length < 2) return COPY.FALLBACK(city);
+  if (!history || history.length < 2)
+    return `Showing latest gold price in ${city}.`;
 
   const prices = history.map(h => h[karat]);
   const today = prices.at(-1);
   const yesterday = prices.at(-2);
 
-  if (today === Math.max(...prices)) return COPY.HIGH(city);
-  if (today === Math.min(...prices)) return COPY.LOW(city);
-  if (today > yesterday) return COPY.UP(city);
-  if (today < yesterday) return COPY.DOWN(city);
-  return COPY.FLAT(city);
+  const max = Math.max(...prices);
+  const min = Math.min(...prices);
+
+  const diff = today - yesterday;
+  const percent = ((diff / yesterday) * 100);
+
+  if (today === max)
+    return `🔴 Gold is at a ${currentRange}-day high in ${city}.`;
+
+  if (today === min)
+    return `🟢 Gold is at a ${currentRange}-day low in ${city}.`;
+
+  if (percent > 2)
+    return `📈 Strong upward momentum (${percent.toFixed(2)}%).`;
+
+  if (percent < -2)
+    return `📉 Sharp drop detected (${percent.toFixed(2)}%).`;
+
+  if (diff > 0)
+    return `📈 Gold prices moved higher today in ${city}.`;
+
+  if (diff < 0)
+    return `📉 Gold prices declined today in ${city}.`;
+
+  return `➖ Gold prices remained stable in ${city}.`;
+}
+
+function generateInsightBadges(history, karat, insightText) {
+  if (!history || history.length < 2) return [];
+
+  const prices = history.map(h => h[karat]);
+  const today = prices.at(-1);
+  const min = Math.min(...prices);
+  const max = Math.max(...prices);
+
+  const range = max - min || 1;
+  const position = (today - min) / range;
+  const rangePercent = (range / min) * 100;
+
+  const badges = [];
+
+  // Do NOT duplicate if insight already says high/low
+  const insightLower = insightText.toLowerCase();
+
+  const isHighInsight = insightLower.includes("high");
+  const isLowInsight = insightLower.includes("low");
+
+  // HIGH / LOW ZONE (only if not already headline)
+  if (!isLowInsight && position <= 0.15) {
+    badges.push({ text: "LOW ZONE", type: "green" });
+  }
+
+  if (!isHighInsight && position >= 0.85) {
+    badges.push({ text: "HIGH ZONE", type: "red" });
+  }
+
+  // Weekly Momentum (7-day change)
+  if (history.length >= 7) {
+    const prev7 = history[history.length - 7][karat];
+    const weeklyChange = ((today - prev7) / prev7) * 100;
+
+    if (weeklyChange > 3) {
+      badges.push({ text: "STRONG UPTREND", type: "blue" });
+    }
+
+    if (weeklyChange < -3) {
+      badges.push({ text: "STRONG DOWNTREND", type: "blue" });
+    }
+  }
+
+  // Volatility
+  if (rangePercent > 4) {
+    badges.push({ text: "HIGH VOLATILITY", type: "yellow" });
+  }
+
+  // Reversal (3 down then up)
+  if (history.length >= 4) {
+    const d1 = prices.at(-2);
+    const d2 = prices.at(-3);
+    const d3 = prices.at(-4);
+
+    if (d3 > d2 && d2 > d1 && today > d1) {
+      badges.push({ text: "REVERSAL SIGNAL", type: "yellow" });
+    }
+  }
+
+  return badges;
 }
 
 function formatUpdatedTimestamp(value) {
@@ -785,9 +876,11 @@ function updateBreadcrumb(city) {
 /* =========================
    FETCH
 ========================= */
-async function fetchPrice() {
+async function fetchPrice(options = {}) {
+  const { smoothRange = false } = options;
   closeAutocomplete();
   if (cityAbortController) cityAbortController.abort();
+  if (priceAbortController) priceAbortController.abort();
 
   // 1) Resolve city (CORRECT priority)
   let city = getSelectedCity();
@@ -816,20 +909,28 @@ if (cityInput && !getSelectedCity()) {
   cityInput.value = city;
 }
 
-  setLoading(true);
-  setStatus("Loading latest prices...");
-  showSkeleton();
+  if (smoothRange) {
+    setStatus("");
+    setRangeButtonsLoading(true);
+  } else {
+    setLoading(true);
+    setStatus("Loading latest prices...");
+    showSkeleton();
+  }
 
   const controller = new AbortController();
+  priceAbortController = controller;
   const timeout = setTimeout(() => controller.abort(), TIMEOUT_MS);
 
   const insightEl = document.getElementById("insight");
-  insightEl.textContent = "Checking today's gold price...";
-  insightEl.classList.remove("hidden");
+  if (!smoothRange) {
+    insightEl.textContent = "Checking today's gold price...";
+    insightEl.classList.remove("hidden");
+  }
 
   try {
     const res = await fetch(
-      `${API}/api/v1/gold/full?city=${encodeURIComponent(city)}`,
+      `${API}/api/v1/gold/full?city=${encodeURIComponent(city)}&days=${currentRange}`,
       { signal: controller.signal }
     );
 
@@ -866,6 +967,7 @@ if (
 
     setStatus("");
   } catch (err) {
+    if (err.name === "AbortError") return;
     hideSkeleton();
     setStatus(
       err.message === "CITY_NOT_FOUND"
@@ -874,7 +976,13 @@ if (
     );
   } finally {
     clearTimeout(timeout);
-    setLoading(false);
+    if (priceAbortController === controller) {
+      priceAbortController = null;
+    }
+    setRangeButtonsLoading(false);
+    if (!smoothRange) {
+      setLoading(false);
+    }
     closeAutocomplete();
   }
 }
@@ -909,6 +1017,31 @@ function renderData(data, options = {}) {
       generateDailyInsight(data.city, data.history, "24K");
   }
   insightEl.classList.remove("hidden");
+
+  const insightText = insightEl.textContent;
+
+  const badgeContainer = document.getElementById("insightBadges");
+  if (badgeContainer) {
+    badgeContainer.innerHTML = "";
+
+    const badges = generateInsightBadges(
+      data.history,
+      "24K",
+      insightText
+    );
+
+    if (badges.length) {
+      badges.forEach(b => {
+        const span = document.createElement("span");
+        span.className = `badge ${b.type}`;
+        span.textContent = b.text;
+        badgeContainer.appendChild(span);
+      });
+      badgeContainer.classList.remove("hidden");
+    } else {
+      badgeContainer.classList.add("hidden");
+    }
+  }
 
   PRICE_KEYS.forEach(k => {
     const scaledPrice = scalePrice(data.prices[k]);
@@ -1159,6 +1292,17 @@ document.querySelectorAll(".karat-btn").forEach(btn => {
     if (currentData) {
       renderCurrentChart();
     }
+  };
+});
+
+document.querySelectorAll(".range-btn").forEach(btn => {
+  btn.onclick = () => {
+    document.querySelectorAll(".range-btn")
+      .forEach(b => b.classList.remove("active"));
+
+    btn.classList.add("active");
+    currentRange = Number(btn.dataset.range);
+    fetchPrice({ smoothRange: true });
   };
 });
 /* =========================
