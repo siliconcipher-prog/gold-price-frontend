@@ -1,4 +1,4 @@
-const fs = require("fs");
+﻿const fs = require("fs");
 const path = require("path");
 
 
@@ -25,7 +25,7 @@ const cities = [
 const templatePath = path.join(__dirname, "../templates/city.html");
 const template = fs.readFileSync(templatePath, "utf8");
 
-// ✅ All city pages go here
+// âœ… All city pages go here
 const outDir = path.join(__dirname, "..", "cities");
 
 // Ensure /cities exists
@@ -48,7 +48,7 @@ cities.forEach(city => {
     )
     .replace(
       /{{DESCRIPTION}}/g,
-      `Check today’s gold rate in ${city}. Live 24K, 22K & 18K gold prices per gram.`
+      `Check today's gold rate in ${city}. Live 24K, 22K & 18K gold prices per gram.`
     )
     .replace(
       /{{CANONICAL}}/g,
@@ -56,5 +56,6 @@ cities.forEach(city => {
     );
 
   fs.writeFileSync(path.join(dir, "index.html"), html, "utf8");
-  console.log(`✓ Generated ${slug}-gold-rate`);
+  console.log(`âœ“ Generated ${slug}-gold-rate`);
 });
+

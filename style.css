@@ -1893,7 +1893,7 @@ input[type=number]::-webkit-outer-spin-button {
   display: none;
 }
 
-.est-card {
+.est-modal-card {
   padding: 20px;
   border-radius: 18px;
   background: #11141a;
@@ -1919,8 +1919,387 @@ input[type=number]::-webkit-outer-spin-button {
   }
 }
 
+.refresh-btn{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  width:42px;
+  height:42px;
+  border-radius:50%;
+  border:1px solid rgba(255,255,255,0.08);
+  background:rgba(255,255,255,0.02);
+  cursor:pointer;
+  transition:all .2s ease;
+}
+
+.refresh-btn:hover{
+  background:rgba(255,255,255,0.05);
+}
+
+.price-skeleton{
+  display:flex;
+  gap:16px;
+}
+
+.skeleton-card{
+  height:120px;
+  flex:1;
+  border-radius:16px;
+  background:linear-gradient(
+    90deg,
+    rgba(255,255,255,0.04),
+    rgba(255,255,255,0.08),
+    rgba(255,255,255,0.04)
+  );
+  background-size:200% 100%;
+  animation:skeleton 1.4s linear infinite;
+}
+
+@keyframes skeleton{
+  0%{background-position:200% 0}
+  100%{background-position:-200% 0}
+}
+
+.estimator{
+  display:flex;
+  flex-direction:column;
+  gap:18px;
+  margin-top:40px;
+}
+
+.est-card{
+  background:rgba(255,255,255,0.02);
+  border:1px solid rgba(255,255,255,0.06);
+  border-radius:16px;
+  padding:18px;
+}
+
+.weight-presets{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  margin-top:6px;
+}
+
+.weight-presets span{
+  font-size:11px;
+  opacity:0.6;
+}
+
+.j-type-options{
+  display:flex;
+  gap:8px;
+  flex-wrap:wrap;
+}
+
+.j-type{
+  padding:4px 12px;
+  border-radius:999px;
+  border:1px solid rgba(255,255,255,0.1);
+  background:transparent;
+  cursor:pointer;
+}
+
+.j-type.active{
+  background:#d4af37;
+  color:#000;
+  border-color:#d4af37;
+}
+
+.cost-grid{
+  display:grid;
+  grid-template-columns:repeat(3,1fr);
+  gap:12px;
+}
+
+.row{
+  display:flex;
+  justify-content:space-between;
+  opacity:.9;
+}
+
+.row.final{
+  font-size:17px;
+  font-weight:700;
+  color:#d4af37;
+}
+
+.est-actions{
+  display:flex;
+  flex-direction:column;
+  gap:10px;
+}
+
+.est-action{
+  padding:10px;
+  border-radius:999px;
+  border:1px solid rgba(255,255,255,0.08);
+  background:transparent;
+}
+
+.est-action.primary{
+  border-color:#d4af37;
+  color:#d4af37;
+}
+
 .hidden {
   display: none;
+}
+
+.estimator{
+  max-width:720px;
+  margin:40px auto;
+  display:flex;
+  flex-direction:column;
+  gap:18px;
+}
+
+.est-card{
+  width:100%;
+  box-sizing:border-box;
+  background:rgba(255,255,255,0.02);
+  border:1px solid rgba(255,255,255,0.06);
+  border-radius:16px;
+  padding:18px;
+}
+
+.cost-grid{
+  display:grid;
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:12px;
+  margin-top:6px;
+}
+
+.cost-grid div{
+  display:flex;
+  flex-direction:column;
+  gap:4px;
+}
+
+.cost-grid input{
+  width:100%;
+  box-sizing:border-box;
+}
+
+.est-card input{
+  width:100%;
+  padding:10px 12px;
+  border-radius:12px;
+  border:1px solid rgba(255,255,255,0.08);
+  background:rgba(0,0,0,0.25);
+  color:#fff;
+  font-size:14px;
+  outline:none;
+}
+
+.est-card input:focus{
+  border-color:#d4af37;
+}
+
+.weight-presets{
+  display:flex;
+  flex-wrap:wrap;
+  gap:8px;
+  margin-top:6px;
+}
+
+@media (max-width:640px){
+  .cost-grid{
+    grid-template-columns:1fr;
+  }
+}
+
+/* Final estimator alignment overrides */
+.estimator h3 {
+  margin: 0;
+  text-align: left;
+}
+
+.estimator .est-card {
+  text-align: left;
+}
+
+.estimator .est-card > label {
+  display: block;
+  margin-bottom: 6px;
+}
+
+.estimator .j-type-options,
+.estimator .weight-presets {
+  justify-content: flex-start;
+}
+
+.estimator .weight-presets span {
+  margin-right: 4px;
+}
+
+.estimator .cost-grid label {
+  font-size: 13px;
+  opacity: 0.8;
+}
+
+.estimator .cost-grid small {
+  font-size: 11px;
+  opacity: 0.55;
+}
+
+.estimator-grid{
+  display:grid;
+  grid-template-columns:1fr;
+  gap:20px;
+}
+
+.est-input{
+  display:flex;
+  flex-direction:column;
+  gap:14px;
+}
+
+.est-output{
+  position:sticky;
+  top:20px;
+}
+
+.est-breakdown .row{
+  display:flex;
+  justify-content:space-between;
+  opacity:0.85;
+}
+
+.est-breakdown .row.strong{
+  font-weight:600;
+}
+
+.est-breakdown .row.final{
+  font-size:18px;
+  font-weight:700;
+  color:#d4af37;
+}
+
+@media (min-width:900px){
+  .estimator-grid{
+    grid-template-columns:1fr 1fr;
+    align-items:start;
+  }
+}
+
+@media (max-width:640px){
+  .est-output{
+    position:static;
+  }
+}
+
+/* Estimator input layout cleanup */
+.est-input .input-group{
+  display:flex;
+  flex-direction:column;
+  gap:10px;
+  margin-bottom:14px;
+}
+
+.est-input .input-group:last-child{
+  margin-bottom:0;
+}
+
+.est-input label{
+  font-size:14px;
+  font-weight:600;
+}
+
+.est-input .mini{
+  font-size:12px;
+  font-weight:500;
+  opacity:0.7;
+}
+
+.est-input .cost-grid{
+  display:grid;
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:10px;
+}
+
+.est-input .weight-presets{
+  display:flex;
+  gap:8px;
+  flex-wrap:wrap;
+  align-items:center;
+}
+
+.est-input .weight-presets span{
+  font-size:11px;
+  opacity:0.6;
+  margin-right:4px;
+}
+
+/* Estimator section polish */
+.est-input .input-section{
+  margin-bottom:18px;
+  display:flex;
+  flex-direction:column;
+  gap:10px;
+}
+
+.est-input .input-section:last-child{
+  margin-bottom:0;
+}
+
+.est-input .input-section h4{
+  font-size:14px;
+  font-weight:600;
+  opacity:.9;
+  margin:0 0 2px;
+}
+
+.est-input .j-type-options{
+  display:flex;
+  flex-wrap:wrap;
+  gap:8px;
+}
+
+.est-input .j-type{
+  padding:5px 12px;
+  border-radius:999px;
+  border:1px solid rgba(255,255,255,0.08);
+  background:transparent;
+  cursor:pointer;
+}
+
+.est-input .j-type.active{
+  background:#d4af37;
+  color:#000;
+  border-color:#d4af37;
+}
+
+.est-input .weight-presets{
+  display:flex;
+  flex-wrap:wrap;
+  gap:8px;
+  margin-top:4px;
+}
+
+.est-input .weight-presets button{
+  padding:4px 10px;
+  border-radius:999px;
+  border:1px solid rgba(255,255,255,0.08);
+  background:transparent;
+  cursor:pointer;
+}
+
+.est-input .cost-grid{
+  display:grid;
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:10px;
+  margin-top:6px;
+}
+
+.est-input .cost-grid label{
+  font-size:11px;
+  opacity:.7;
+  margin-bottom:2px;
+}
+
+.est-input .cost-grid input{
+  width:100%;
 }
 /* =========================
    END OF STYLE.CSS
