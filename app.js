@@ -594,13 +594,20 @@ function ensureShareButton() {
   actions.insertAdjacentElement("afterbegin", shareAction);
 }
 function showSkeleton() {
-  document.getElementById("prices").classList.remove("hidden");
+  const prices = document.getElementById("prices");
+  const priceSkeleton = document.getElementById("priceSkeleton");
+  if (prices) prices.classList.add("hidden");
+  if (priceSkeleton) priceSkeleton.classList.remove("hidden");
   const chartWrapper = document.getElementById("chartWrapper");
   chartWrapper.classList.remove("hidden");
   chartWrapper.classList.add("chart-loading");
 }
 
 function hideSkeleton() {
+  const prices = document.getElementById("prices");
+  const priceSkeleton = document.getElementById("priceSkeleton");
+  if (prices) prices.classList.remove("hidden");
+  if (priceSkeleton) priceSkeleton.classList.add("hidden");
   document.getElementById("chartWrapper").classList.remove("chart-loading");
 }
 
@@ -1125,7 +1132,6 @@ function renderData(data, options = {}) {
     }
   });
   currentPrices = data.prices;
-  updateBasicCalc();
   updateAdvancedCalc();
 
   renderCurrentChart();
@@ -1364,58 +1370,34 @@ document.querySelectorAll(".range-btn").forEach(btn => {
   };
 });
 
-// Toggle Tabs
-document.querySelectorAll(".est-btn").forEach(btn => {
-  btn.onclick = () => {
-    document.querySelectorAll(".est-btn")
-      .forEach(b => b.classList.remove("active"));
-
-    btn.classList.add("active");
-
-    const mode = btn.dataset.mode;
-
-    document.getElementById("basicEstimator")
-      .classList.toggle("hidden", mode !== "basic");
-
-    document.getElementById("advancedEstimator")
-      .classList.toggle("hidden", mode !== "advanced");
-  };
-});
-
-// BASIC CALCULATOR
-function updateBasicCalc() {
-  if (!currentPrices) return;
-
-  const weight = parseFloat(document.getElementById("basicWeight").value);
-  if (!weight || weight <= 0) {
-    document.getElementById("basicResult").textContent = "—";
-    return;
-  }
-
-  const karat = document.querySelector(".karat-btn.active").dataset.karat;
-  const price = currentPrices[karat];
-
-  const total = weight * price;
-  document.getElementById("basicResult")
-    .textContent = `₹${total.toLocaleString()}`;
+function formatPrice(n){
+  return "₹"+Math.round(n).toLocaleString("en-IN");
 }
 
 // ADVANCED CALCULATOR
 function updateAdvancedCalc() {
   if (!currentPrices) return;
+  const emptyValue = "-";
 
   const weight = parseFloat(document.getElementById("advWeight").value);
   const making = parseFloat(document.getElementById("makingCharge").value) || 0;
   const waste = parseFloat(document.getElementById("wastePercent").value) || 0;
   const gst = parseFloat(document.getElementById("gstPercent").value) || 0;
-  const breakdown = document.querySelector(".est-breakdown");
+  const bdBase = document.getElementById("bdBase");
+  const bdMaking = document.getElementById("bdMaking");
+  const bdWaste = document.getElementById("bdWaste");
+  const bdSubtotal = document.getElementById("bdSubtotal");
+  const bdGst = document.getElementById("bdGst");
+  const advancedResult = document.getElementById("advancedResult");
+  if (!bdBase || !bdMaking || !bdWaste || !bdSubtotal || !bdGst || !advancedResult) return;
 
   if (!weight || weight <= 0) {
-    document.getElementById("advancedResult").textContent = "—";
-    if (breakdown) {
-      breakdown.classList.add("hidden");
-      breakdown.classList.remove("visible");
-    }
+    bdBase.textContent = emptyValue;
+    bdMaking.textContent = emptyValue;
+    bdWaste.textContent = emptyValue;
+    bdSubtotal.textContent = emptyValue;
+    bdGst.textContent = emptyValue;
+    advancedResult.textContent = emptyValue;
     return;
   }
 
@@ -1430,22 +1412,16 @@ function updateAdvancedCalc() {
   const gstAmount = subtotal * (gst / 100);
   const final = subtotal + gstAmount;
 
-  document.getElementById("bdBase").textContent = `₹${base.toLocaleString()}`;
-  document.getElementById("bdMaking").textContent = `₹${makingAmount.toLocaleString()}`;
-  document.getElementById("bdWaste").textContent = `₹${wasteAmount.toLocaleString()}`;
-  document.getElementById("bdSubtotal").textContent = `₹${subtotal.toLocaleString()}`;
-  document.getElementById("bdGst").textContent = `₹${gstAmount.toLocaleString()}`;
-  document.getElementById("advancedResult")
-    .textContent = `₹${final.toLocaleString()}`;
-  if (breakdown) {
-    breakdown.classList.remove("hidden");
-    breakdown.classList.add("visible");
-  }
+  bdBase.textContent = formatPrice(base);
+  bdMaking.textContent = formatPrice(makingAmount);
+  bdWaste.textContent = formatPrice(wasteAmount);
+  bdSubtotal.textContent = formatPrice(subtotal);
+  bdGst.textContent = formatPrice(gstAmount);
+  advancedResult.textContent = formatPrice(final);
 }
 
 // Input listeners
 document.addEventListener("input", e => {
-  if (e.target.id === "basicWeight") updateBasicCalc();
   if (["advWeight","makingCharge","wastePercent","gstPercent"]
       .includes(e.target.id)) updateAdvancedCalc();
 });
@@ -1453,10 +1429,53 @@ document.addEventListener("input", e => {
 // Recalculate on karat switch
 document.querySelectorAll(".karat-btn").forEach(btn => {
   btn.addEventListener("click", () => {
-    updateBasicCalc();
     updateAdvancedCalc();
   });
 });
+
+document.getElementById("estimateJump")
+?.addEventListener("click",()=>{
+
+document.getElementById("estimator")
+.scrollIntoView({behavior:"smooth"})
+
+})
+
+document.querySelectorAll(".weight-presets button")
+.forEach(btn=>{
+
+btn.addEventListener("click",()=>{
+
+document.getElementById("advWeight").value=
+btn.dataset.weight
+
+updateAdvancedCalc()
+
+})
+
+})
+
+document.querySelectorAll(".j-type")
+.forEach(btn=>{
+
+btn.addEventListener("click",()=>{
+
+document.querySelectorAll(".j-type")
+.forEach(b=>b.classList.remove("active"))
+
+btn.classList.add("active")
+
+document.getElementById("makingCharge").value=
+btn.dataset.making
+
+document.getElementById("wastePercent").value=
+btn.dataset.waste
+
+updateAdvancedCalc()
+
+})
+
+})
 
 document.getElementById("copyEstimate")
   ?.addEventListener("click", () => {
@@ -1699,3 +1718,4 @@ document.getElementById("fbSubmit").onclick = async () => {
       "Could not submit feedback. Try again.";
   }
 };
+
