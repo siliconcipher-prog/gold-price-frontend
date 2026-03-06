@@ -26,9 +26,11 @@ let priceAbortController = null;
 
 const WEIGHT_TOGGLE_DEBOUNCE_MS = 220;
 const PRICE_ANIMATION_MS = 340;
+const ESTIMATOR_ANIMATION_MS = 320;
 const CHART_ANIMATION_MS = 360;
 const WEIGHT_TOGGLE_LOCK_MS = CHART_ANIMATION_MS + 80;
 const priceAnimationFrames = new WeakMap();
+const estimatorAnimationFrames = new WeakMap();
 let weightToggleLockTimer = null;
 let isWeightToggleLocked = false;
 
@@ -1374,6 +1376,78 @@ function formatPrice(n){
   return "₹"+Math.round(n).toLocaleString("en-IN");
 }
 
+function animateEstimatorPriceValue(el, toValue) {
+  if (!el) return;
+
+  const next = Number(toValue);
+  if (!Number.isFinite(next)) return;
+
+  const prevValue = el.dataset.estimatorValue;
+  const prev = prevValue !== undefined ? Number(prevValue) : next;
+
+  if (!Number.isFinite(prev) || prev === next) {
+    el.textContent = formatPrice(next);
+    el.dataset.estimatorValue = String(next);
+    return;
+  }
+
+  const activeFrame = estimatorAnimationFrames.get(el);
+  if (activeFrame) cancelAnimationFrame(activeFrame);
+
+  const start = performance.now();
+  const delta = next - prev;
+
+  const tick = now => {
+    const progress = Math.min((now - start) / ESTIMATOR_ANIMATION_MS, 1);
+    const eased = 1 - Math.pow(1 - progress, 3);
+    const current = prev + delta * eased;
+    el.textContent = formatPrice(current);
+
+    if (progress < 1) {
+      estimatorAnimationFrames.set(el, requestAnimationFrame(tick));
+      return;
+    }
+
+    el.dataset.estimatorValue = String(next);
+    estimatorAnimationFrames.delete(el);
+  };
+
+  estimatorAnimationFrames.set(el, requestAnimationFrame(tick));
+}
+
+function resetEstimatorPriceValue(el, emptyValue) {
+  if (!el) return;
+
+  const activeFrame = estimatorAnimationFrames.get(el);
+  if (activeFrame) {
+    cancelAnimationFrame(activeFrame);
+    estimatorAnimationFrames.delete(el);
+  }
+
+  delete el.dataset.estimatorValue;
+  el.textContent = emptyValue;
+}
+
+function animateEstimatorUpdate() {
+  const breakdown = document.querySelector(".est-breakdown");
+  const finalRow = document.querySelector(".est-breakdown .row.final");
+  if (!breakdown || !finalRow) return;
+
+  breakdown.classList.remove("is-updating");
+  finalRow.classList.remove("is-updating");
+
+  // Restart CSS animation when values change repeatedly.
+  void breakdown.offsetWidth;
+
+  breakdown.classList.add("is-updating");
+  finalRow.classList.add("is-updating");
+
+  setTimeout(() => {
+    breakdown.classList.remove("is-updating");
+    finalRow.classList.remove("is-updating");
+  }, 360);
+}
+
 // ADVANCED CALCULATOR
 function updateAdvancedCalc() {
   if (!currentPrices) return;
@@ -1392,12 +1466,12 @@ function updateAdvancedCalc() {
   if (!bdBase || !bdMaking || !bdWaste || !bdSubtotal || !bdGst || !advancedResult) return;
 
   if (!weight || weight <= 0) {
-    bdBase.textContent = emptyValue;
-    bdMaking.textContent = emptyValue;
-    bdWaste.textContent = emptyValue;
-    bdSubtotal.textContent = emptyValue;
-    bdGst.textContent = emptyValue;
-    advancedResult.textContent = emptyValue;
+    resetEstimatorPriceValue(bdBase, emptyValue);
+    resetEstimatorPriceValue(bdMaking, emptyValue);
+    resetEstimatorPriceValue(bdWaste, emptyValue);
+    resetEstimatorPriceValue(bdSubtotal, emptyValue);
+    resetEstimatorPriceValue(bdGst, emptyValue);
+    resetEstimatorPriceValue(advancedResult, emptyValue);
     return;
   }
 
@@ -1412,12 +1486,13 @@ function updateAdvancedCalc() {
   const gstAmount = subtotal * (gst / 100);
   const final = subtotal + gstAmount;
 
-  bdBase.textContent = formatPrice(base);
-  bdMaking.textContent = formatPrice(makingAmount);
-  bdWaste.textContent = formatPrice(wasteAmount);
-  bdSubtotal.textContent = formatPrice(subtotal);
-  bdGst.textContent = formatPrice(gstAmount);
-  advancedResult.textContent = formatPrice(final);
+  animateEstimatorPriceValue(bdBase, base);
+  animateEstimatorPriceValue(bdMaking, makingAmount);
+  animateEstimatorPriceValue(bdWaste, wasteAmount);
+  animateEstimatorPriceValue(bdSubtotal, subtotal);
+  animateEstimatorPriceValue(bdGst, gstAmount);
+  animateEstimatorPriceValue(advancedResult, final);
+  animateEstimatorUpdate();
 }
 
 // Input listeners
@@ -1434,12 +1509,18 @@ document.querySelectorAll(".karat-btn").forEach(btn => {
 });
 
 document.getElementById("estimateJump")
-?.addEventListener("click",()=>{
+?.addEventListener("click", () => {
+  const estimator = document.getElementById("estimator");
+  if (!estimator) return;
 
-document.getElementById("estimator")
-.scrollIntoView({behavior:"smooth"})
+  const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const top = estimator.getBoundingClientRect().top + window.scrollY - 16;
 
-})
+  window.scrollTo({
+    top: Math.max(0, top),
+    behavior: prefersReducedMotion ? "auto" : "smooth"
+  });
+});
 
 document.querySelectorAll(".weight-presets button")
 .forEach(btn=>{

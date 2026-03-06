@@ -2301,5 +2301,40 @@ input[type=number]::-webkit-outer-spin-button {
 .est-input .cost-grid input{
   width:100%;
 }
+
+.est-breakdown.is-updating{
+  animation: estimatorPanelPulse 0.34s ease;
+}
+
+.est-breakdown .row.final.is-updating{
+  animation: estimatorValuePulse 0.34s ease;
+}
+
+@keyframes estimatorPanelPulse{
+  0%{
+    box-shadow: 0 0 0 0 rgba(212,175,55,0);
+  }
+  45%{
+    box-shadow: 0 0 0 3px rgba(212,175,55,0.14);
+  }
+  100%{
+    box-shadow: 0 0 0 0 rgba(212,175,55,0);
+  }
+}
+
+@keyframes estimatorValuePulse{
+  0%{
+    transform: translateY(0);
+    opacity: 0.9;
+  }
+  45%{
+    transform: translateY(-1px);
+    opacity: 1;
+  }
+  100%{
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
 /* =========================
    END OF STYLE.CSS
