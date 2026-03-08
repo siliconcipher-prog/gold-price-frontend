@@ -2,17 +2,10 @@
    CONFIG
 ========================= */
 
-const isLocal =
-  window.location.hostname === "localhost" ||
-  window.location.hostname === "127.0.0.1" ||
-  window.location.hostname.startsWith("192.168.");
-
-const API = isLocal
-  ? "http://127.0.0.1:8000"
-  : "https://gold-price-backend-vod4.onrender.com";
-
-
-const TIMEOUT_MS = 8000;
+let slabsData = null;
+let citySlabMap = null;
+let citiesList = null;
+let slabsLastUpdated = "";
 
 let chart;
 let currentKarat = "24K";
@@ -22,7 +15,6 @@ let currentPrices = null;
 let currentData = null;
 let isLoading = false;
 let lastWeightToggleAt = 0;
-let priceAbortController = null;
 
 const WEIGHT_TOGGLE_DEBOUNCE_MS = 220;
 const PRICE_ANIMATION_MS = 340;
@@ -67,7 +59,6 @@ const PRICE_KEYS = ["24K", "22K", "18K"];
 ========================= */
 
 let debounceTimer;
-let cityAbortController = null;
 let isAutocompleteOpen = false;
 
 function openAutocomplete() {
@@ -145,7 +136,7 @@ function getCityFromURL() {
 ========================= */
 
 function cacheKey(city) {
-  return `gold:${city.toLowerCase()}`;
+  return `gold:${city.toLowerCase()}:${currentRange}`;
 }
 
 function saveCache(city, data) {
@@ -156,6 +147,94 @@ function saveCache(city, data) {
 function loadCache(city) {
   const raw = localStorage.getItem(cacheKey(city));
   return raw ? JSON.parse(raw) : null;
+}
+
+async function loadData() {
+  try {
+    if (!slabsData) {
+      const res = await fetch("https://rxdmyncafckkpmizpcgu.supabase.co/storage/v1/object/public/data/slabs.json");
+      if (!res.ok) throw new Error("SLABS_FETCH_FAILED");
+      const json = await res.json();
+      slabsData = json.slabs || {};
+      slabsLastUpdated = json.last_updated || "";
+    }
+
+    if (!citySlabMap) {
+      const res = await fetch("https://rxdmyncafckkpmizpcgu.supabase.co/storage/v1/object/public/data/city-slab-map.json");
+      if (!res.ok) throw new Error("CITY_MAP_FETCH_FAILED");
+      citySlabMap = await res.json();
+    }
+
+    if (!citiesList) {
+      const res = await fetch("https://rxdmyncafckkpmizpcgu.supabase.co/storage/v1/object/public/data/cities.json");
+      if (!res.ok) throw new Error("CITIES_FETCH_FAILED");
+      citiesList = await res.json();
+    }
+  } catch (err) {
+    console.error("Failed to load static data:", err);
+    throw err;
+  }
+}
+
+function getCityMapKey(city) {
+  const normalized = String(city || "").trim().toLowerCase();
+  if (!normalized) return "";
+
+  const candidates = [
+    normalized,
+    normalized.replace(/\s+/g, "-"),
+    normalized.replace(/\s+/g, ""),
+    normalized.replace(/[^a-z0-9]/g, "")
+  ];
+
+  return candidates.find(k => citySlabMap && citySlabMap[k]) || candidates[0];
+}
+
+async function loadCities() {
+  await loadData();
+  return Array.isArray(citiesList) ? citiesList : [];
+}
+
+async function getCityPrice(city) {
+  await loadData();
+
+  const key = getCityMapKey(city);
+  const slab = citySlabMap[key];
+
+  if (!slab) {
+    console.error("City not mapped:", city);
+    return null;
+  }
+
+  const slabData = slabsData[slab];
+  if (!slabData) {
+    console.error("Slab not found:", slab);
+    return null;
+  }
+
+  const history = Array.isArray(slabData.history)
+    ? [...slabData.history].sort(
+        (a, b) => new Date(a.date) - new Date(b.date)
+      )
+    : [];
+  const scopedHistory = history.slice(-currentRange);
+  const latest = scopedHistory.at(-1) || history.at(-1) || null;
+  const current = latest
+    ? {
+        "24K": Number(latest["24K"]),
+        "22K": Number(latest["22K"]),
+        "18K": Number(latest["18K"])
+      }
+    : slabData.current;
+
+  return {
+    city,
+    slab,
+    prices: current,
+    current,
+    history: scopedHistory,
+    last_updated: slabsLastUpdated || new Date().toISOString()
+  };
 }
 
 /* =========================
@@ -634,25 +713,16 @@ cityInput.addEventListener("input", () => {
   }
 
   debounceTimer = setTimeout(async () => {
-    if (cityAbortController) cityAbortController.abort();
-    cityAbortController = new AbortController();
-
-    // show skeleton immediately
     showAutocompleteSkeleton();
     setStatus("");
 
     try {
-      const res = await fetch(
-        `${API}/api/v1/cities?q=${encodeURIComponent(q)}`,
-        { signal: cityAbortController.signal }
-      );
-
-      if (!res.ok) {
-        throw new Error("CITY_FETCH_FAILED");
-      }
-
-      const cities = await res.json();
+      const allCities = await loadCities();
       if (cityInput.value.trim() !== q) return;
+      const query = q.toLowerCase();
+      const cities = allCities
+        .filter(city => city.toLowerCase().includes(query))
+        .slice(0, 20);
 
       suggestionBox.innerHTML = "";
 
@@ -678,8 +748,6 @@ cityInput.addEventListener("input", () => {
 
       openAutocomplete();
     } catch (err) {
-      if (err.name === "AbortError") return;
-
       showAutocompleteError(
         "Unable to load city suggestions. Please try again."
       );
@@ -914,6 +982,26 @@ function updateBreadcrumb(city) {
   }
 }
 
+function syncCityURL(city) {
+  const slug = city.toLowerCase().replace(/\s+/g, "-");
+  const nextURL = slug === "india" ? "/" : `/${slug}-gold-rate`;
+
+  if (window.location.pathname === "/" && slug !== "india") {
+    window.location.href = nextURL;
+    return true;
+  }
+
+  if (
+    window.location.pathname !== "/" &&
+    window.location.pathname !== nextURL
+  ) {
+    window.location.href = nextURL;
+    return true;
+  }
+
+  return false;
+}
+
 
 
 /* =========================
@@ -922,8 +1010,6 @@ function updateBreadcrumb(city) {
 async function fetchPrice(options = {}) {
   const { smoothRange = false } = options;
   closeAutocomplete();
-  if (cityAbortController) cityAbortController.abort();
-  if (priceAbortController) priceAbortController.abort();
 
   // 1) Resolve city (CORRECT priority)
   let city = getSelectedCity();
@@ -962,10 +1048,6 @@ if (cityInput && !getSelectedCity()) {
     showSkeleton();
   }
 
-  const controller = new AbortController();
-  priceAbortController = controller;
-  const timeout = setTimeout(() => controller.abort(), TIMEOUT_MS);
-
   const insightEl = document.getElementById("insight");
   if (!smoothRange) {
     insightEl.textContent = "Checking today's gold price...";
@@ -973,45 +1055,27 @@ if (cityInput && !getSelectedCity()) {
   }
 
   try {
-    const res = await fetch(
-      `${API}/api/v1/gold/full?city=${encodeURIComponent(city)}&days=${currentRange}`,
-      { signal: controller.signal }
-    );
+    const cached = loadCache(city);
+    if (cached && Array.isArray(cached.history) && cached.history.length) {
+      renderData(cached, { animatePrices: smoothRange });
+      updateBreadcrumb(cached.city);
+      if (syncCityURL(cached.city)) return;
+      setStatus("");
+      return;
+    }
 
-    if (!res.ok) throw new Error("CITY_NOT_FOUND");
+    const data = await getCityPrice(city);
+    if (!data) throw new Error("CITY_NOT_FOUND");
 
-    const data = await res.json();
     saveCache(data.city, data);
     renderData(data);
     updateBreadcrumb(data.city);
 
     // 2) URL update (India = root)
-const slug = data.city.toLowerCase().replace(/\s+/g, "-");
-const nextURL = slug === "india" ? "/" : `/${slug}-gold-rate`;
-
-// If on homepage and selecting city → redirect
-if (window.location.pathname === "/" && slug !== "india") {
-  window.location.href = nextURL;
-  return;
-}
-
-// If on city page and city changed → redirect
-if (
-  window.location.pathname !== "/" &&
-  window.location.pathname !== nextURL
-) {
-  window.location.href = nextURL;
-  return;
-}
-// if (window.location.pathname !== nextURL) {
-//   history.pushState({}, "", nextURL);
-// }
-
-
+    if (syncCityURL(data.city)) return;
 
     setStatus("");
   } catch (err) {
-    if (err.name === "AbortError") return;
     hideSkeleton();
     setStatus(
       err.message === "CITY_NOT_FOUND"
@@ -1019,10 +1083,6 @@ if (
         : "Something went wrong. Please try again."
     );
   } finally {
-    clearTimeout(timeout);
-    if (priceAbortController === controller) {
-      priceAbortController = null;
-    }
     setRangeButtonsLoading(false);
     document.getElementById("chartWrapper")
       .classList.remove("chart-loading");
@@ -1723,28 +1783,32 @@ function enableFeedback() {
 }
 
 document.getElementById("fbSubmit").onclick = async () => {
+  const btn = document.getElementById("fbSubmit");
+  const status = document.getElementById("fbStatus");
   const message = document.getElementById("fbMessage").value.trim();
-  const city = cityInput.value || "India";
+  const city = getSelectedCity() || getCityFromURL() || "India";
+  const payload = {
+    city,
+    helpful: feedbackHelpful,
+    message,
+    page_url: window.location.href,
+    created_at: new Date().toISOString()
+  };
+
+  btn.textContent = "Saving...";
+  btn.disabled = true;
 
   try {
-    await fetch(`${API}/api/v1/feedback`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        city,
-        helpful: feedbackHelpful,
-        message,
-        page_url: window.location.href
-      })
-    });
-
-    document.getElementById("fbStatus").textContent =
-      "Thanks! Your feedback helps improve the site.";
-
-    document.getElementById("fbSubmit").disabled = true;
+    const queueRaw = localStorage.getItem("feedbackQueue");
+    const queue = queueRaw ? JSON.parse(queueRaw) : [];
+    queue.push(payload);
+    localStorage.setItem("feedbackQueue", JSON.stringify(queue));
+    status.textContent = "Thanks! Feedback saved locally.";
+    btn.textContent = "Saved";
   } catch {
-    document.getElementById("fbStatus").textContent =
-      "Could not submit feedback. Please try later.";
+    status.textContent = "Could not save feedback.";
+    btn.textContent = "Submit feedback";
+    btn.disabled = false;
   }
 };
 
@@ -1770,34 +1834,4 @@ document.addEventListener("click", e => {
     feedbackPanel.classList.add("hidden");
   }
 });
-
-
-document.getElementById("fbSubmit").onclick = async () => {
-  const btn = document.getElementById("fbSubmit");
-  btn.textContent = "Sending...";
-  btn.disabled = true;
-
-  try {
-    await fetch(`${API}/api/v1/feedback`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        city: cityInput.value || "India",
-        helpful: feedbackHelpful,
-        message: document.getElementById("fbMessage").value.trim(),
-        page_url: window.location.href
-      })
-    });
-
-    btn.textContent = "Sent";
-    document.getElementById("fbStatus").textContent =
-      "Thanks! Your feedback helps improve the site.";
-  } catch {
-    btn.textContent = "Submit feedback";
-    btn.disabled = false;
-    document.getElementById("fbStatus").textContent =
-      "Could not submit feedback. Try again.";
-  }
-};
-
 
