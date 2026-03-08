@@ -729,7 +729,7 @@ input:focus {
     transform 0.18s ease;
 }
 
-.range-btn:hover:not(:disabled) {
+.range-btn:hover:not(.active):not(:disabled) {
   color: #d9dee7;
   background: rgba(255, 255, 255, 0.06);
   transform: translateY(-1px);

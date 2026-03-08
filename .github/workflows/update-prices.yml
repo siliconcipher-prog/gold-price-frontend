@@ -21,17 +21,15 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 20
+          cache: 'npm'
 
       - run: npm install
-        working-directory: web
 
       - name: Generate slabs
         run: node scripts/generateSlabs.js
-        working-directory: web
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
 
       - name: Generate sitemap
         run: node scripts/generateSitemap.js
-        working-directory: web

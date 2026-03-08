@@ -60,6 +60,7 @@ const PRICE_KEYS = ["24K", "22K", "18K"];
 
 let debounceTimer;
 let isAutocompleteOpen = false;
+let isAutocompleteLoading = false;
 
 function openAutocomplete() {
   isAutocompleteOpen = true;
@@ -257,6 +258,12 @@ function setLoading(flag) {
   refreshBtn.disabled = flag;
   refreshBtn.classList.toggle("loading", flag);
   setWeightToggleDisabled(flag || isWeightToggleLocked);
+}
+
+function setAutocompleteLoading(flag) {
+  isAutocompleteLoading = flag;
+  if (isLoading) return;
+  refreshBtn.classList.toggle("loading", flag);
 }
 
 function formatRupee(value) {
@@ -715,6 +722,7 @@ cityInput.addEventListener("input", () => {
   debounceTimer = setTimeout(async () => {
     showAutocompleteSkeleton();
     setStatus("");
+    setAutocompleteLoading(true);
 
     try {
       const allCities = await loadCities();
@@ -751,6 +759,8 @@ cityInput.addEventListener("input", () => {
       showAutocompleteError(
         "Unable to load city suggestions. Please try again."
       );
+    } finally {
+      setAutocompleteLoading(false);
     }
   }, 250);
 });
