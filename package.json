@@ -13,7 +13,7 @@
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "type": "commonjs",
+  "type": "module",
   "bugs": {
     "url": "https://github.com/siliconcipher-prog/gold-price-frontend/issues"
   },
@@ -21,4 +21,5 @@
   "dependencies": {
     "@supabase/supabase-js": "^2.98.0"
   }
+  
 }
