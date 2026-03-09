@@ -2336,5 +2336,29 @@ input[type=number]::-webkit-outer-spin-button {
     opacity: 1;
   }
 }
+
+.estimate-share-card{
+  text-align:center;
+  display:flex;
+  flex-direction:column;
+  gap:12px;
+}
+
+.estimate-share-card h3{
+  margin:0 0 4px;
+}
+
+.estimate-row{
+  display:flex;
+  justify-content:space-between;
+  font-size:15px;
+  gap:10px;
+}
+
+.estimate-row.final{
+  font-size:18px;
+  font-weight:700;
+  color:#d4af37;
+}
 /* =========================
    END OF STYLE.CSS

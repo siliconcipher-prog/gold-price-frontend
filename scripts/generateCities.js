@@ -49,6 +49,7 @@ async function run() {
 
     const html = template
       .replace(/{{CITY}}/g, city)
+      .replace(/{{CITY_SLUG}}/g, slug)
       .replace(
         /{{TITLE}}/g,
         `${city} Gold Rate Today – 24K, 22K, 18K Price`
@@ -56,10 +57,6 @@ async function run() {
       .replace(
         /{{DESCRIPTION}}/g,
         `Check today's gold rate in ${city}. Live 24K, 22K & 18K gold prices per gram.`
-      )
-      .replace(
-        /{{CANONICAL}}/g,
-        `https://goldrateindia.co.in/${slug}-gold-rate`
       )
 
     fs.writeFileSync(path.join(dir, "index.html"), html)
@@ -100,7 +97,11 @@ async function run() {
     .upload(
       "cities.json",
       citiesJson,
-      { upsert: true, contentType: "application/json", cacheControl: "86400" }
+      {
+        upsert: true,
+        contentType: "application/json",
+        cacheControl: "public, max-age=3600"
+      }
     )
 
   if (citiesUploadError) {
@@ -112,7 +113,11 @@ async function run() {
     .upload(
       "city-slab-map.json",
       cityMapJson,
-      { upsert: true, contentType: "application/json", cacheControl: "86400" }
+      {
+        upsert: true,
+        contentType: "application/json",
+        cacheControl: "public, max-age=3600"
+      }
     )
 
   if (mapUploadError) {

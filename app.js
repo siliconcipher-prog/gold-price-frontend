@@ -21,6 +21,7 @@ const PRICE_ANIMATION_MS = 340;
 const ESTIMATOR_ANIMATION_MS = 320;
 const CHART_ANIMATION_MS = 360;
 const WEIGHT_TOGGLE_LOCK_MS = CHART_ANIMATION_MS + 80;
+const MIN_REFRESH_SPINNER_MS = 350;
 const priceAnimationFrames = new WeakMap();
 const estimatorAnimationFrames = new WeakMap();
 let weightToggleLockTimer = null;
@@ -141,19 +142,48 @@ function cacheKey(city) {
 }
 
 function saveCache(city, data) {
-  localStorage.setItem(cacheKey(city), JSON.stringify(data));
+  const payload = {
+    data,
+    cachedAt: Date.now()
+  };
+
+  localStorage.setItem(
+    cacheKey(city),
+    JSON.stringify(payload)
+  );
+
   localStorage.setItem("lastCity", city);
 }
 
 function loadCache(city) {
   const raw = localStorage.getItem(cacheKey(city));
-  return raw ? JSON.parse(raw) : null;
+  if (!raw) return null;
+
+  try {
+    const payload = JSON.parse(raw);
+    const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+
+    if (!payload.cachedAt) return null;
+
+    if (Date.now() - payload.cachedAt > CACHE_TTL) {
+      localStorage.removeItem(cacheKey(city));
+      return null;
+    }
+
+    return payload.data;
+  } catch (err) {
+    console.warn("Cache parse error", err);
+    localStorage.removeItem(cacheKey(city));
+    return null;
+  }
 }
 
 async function loadData() {
   try {
     if (!slabsData) {
-      const res = await fetch("https://rxdmyncafckkpmizpcgu.supabase.co/storage/v1/object/public/data/slabs.json");
+      const res = await fetch("https://rxdmyncafckkpmizpcgu.supabase.co/storage/v1/object/public/data/slabs.json", {
+        cache: "no-store"
+      });
       if (!res.ok) throw new Error("SLABS_FETCH_FAILED");
       const json = await res.json();
       slabsData = json.slabs || {};
@@ -161,13 +191,17 @@ async function loadData() {
     }
 
     if (!citySlabMap) {
-      const res = await fetch("https://rxdmyncafckkpmizpcgu.supabase.co/storage/v1/object/public/data/city-slab-map.json");
+      const res = await fetch("https://rxdmyncafckkpmizpcgu.supabase.co/storage/v1/object/public/data/city-slab-map.json", {
+        cache: "no-store"
+      });
       if (!res.ok) throw new Error("CITY_MAP_FETCH_FAILED");
       citySlabMap = await res.json();
     }
 
     if (!citiesList) {
-      const res = await fetch("https://rxdmyncafckkpmizpcgu.supabase.co/storage/v1/object/public/data/cities.json");
+      const res = await fetch("https://rxdmyncafckkpmizpcgu.supabase.co/storage/v1/object/public/data/cities.json", {
+        cache: "no-store"
+      });
       if (!res.ok) throw new Error("CITIES_FETCH_FAILED");
       citiesList = await res.json();
     }
@@ -236,6 +270,23 @@ async function getCityPrice(city) {
     history: scopedHistory,
     last_updated: slabsLastUpdated || new Date().toISOString()
   };
+}
+
+function clearOldCaches() {
+  const prefix = "gold:";
+
+  Object.keys(localStorage).forEach(key => {
+    if (!key.startsWith(prefix)) return;
+
+    try {
+      const value = JSON.parse(localStorage.getItem(key));
+      if (!value.cachedAt) {
+        localStorage.removeItem(key);
+      }
+    } catch {
+      localStorage.removeItem(key);
+    }
+  });
 }
 
 /* =========================
@@ -1018,8 +1069,9 @@ function syncCityURL(city) {
    FETCH
 ========================= */
 async function fetchPrice(options = {}) {
-  const { smoothRange = false } = options;
+  const { smoothRange = false, forceRefresh = false } = options;
   closeAutocomplete();
+  const startedAt = Date.now();
 
   // 1) Resolve city (CORRECT priority)
   let city = getSelectedCity();
@@ -1065,7 +1117,7 @@ if (cityInput && !getSelectedCity()) {
   }
 
   try {
-    const cached = loadCache(city);
+    const cached = forceRefresh ? null : loadCache(city);
     if (cached && Array.isArray(cached.history) && cached.history.length) {
       renderData(cached, { animatePrices: smoothRange });
       updateBreadcrumb(cached.city);
@@ -1093,6 +1145,14 @@ if (cityInput && !getSelectedCity()) {
         : "Something went wrong. Please try again."
     );
   } finally {
+    if (!smoothRange && forceRefresh) {
+      const elapsed = Date.now() - startedAt;
+      if (elapsed < MIN_REFRESH_SPINNER_MS) {
+        await new Promise(resolve =>
+          setTimeout(resolve, MIN_REFRESH_SPINNER_MS - elapsed)
+        );
+      }
+    }
     setRangeButtonsLoading(false);
     document.getElementById("chartWrapper")
       .classList.remove("chart-loading");
@@ -1648,14 +1708,39 @@ document.getElementById("shareEstimate")
 
   const final = document.getElementById("advancedResult").textContent;
   const weight = document.getElementById("advWeight").value;
+  const activeKaratBtn = document.querySelector(".karat-btn.active");
+  const activeKarat = activeKaratBtn ? activeKaratBtn.dataset.karat : "24K";
 
-  const content = `
-Weight: ${weight}g
-Final: ${final}
-`;
+  const rate = activeKaratBtn
+    ? currentPrices?.[activeKarat]
+    : null;
 
-  document.getElementById("shareCardContent")
-    .textContent = content;
+  const html = `
+  <div class="estimate-share-card">
+
+    <h3>Gold Estimate</h3>
+
+    <div class="estimate-row">
+      <span>Weight</span>
+      <strong>${weight || "-"} g</strong>
+    </div>
+
+    <div class="estimate-row">
+      <span>Gold Rate</span>
+      <strong>₹${rate?.toLocaleString("en-IN") || "-"}/g</strong>
+    </div>
+
+    <div class="divider"></div>
+
+    <div class="estimate-row final">
+      <span>Estimated Price</span>
+      <strong>${final}</strong>
+    </div>
+
+  </div>
+  `;
+
+  document.getElementById("shareCardContent").innerHTML = html;
 
   document.getElementById("estimateModal")
     .classList.remove("hidden");
@@ -1688,7 +1773,7 @@ document.getElementById("setAlert")
    INIT
 ========================= */
 
-refreshBtn.addEventListener("click", fetchPrice);
+refreshBtn.addEventListener("click", () => fetchPrice({ forceRefresh: true }));
 
 // document.addEventListener("DOMContentLoaded", () => {
 //   const city =
@@ -1701,6 +1786,7 @@ refreshBtn.addEventListener("click", fetchPrice);
 // });
 
 document.addEventListener("DOMContentLoaded", () => {
+  clearOldCaches();
   ensureWeightToggle();
   ensureShareButton();
   const insight = document.getElementById("insight");
