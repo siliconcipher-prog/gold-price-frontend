@@ -83,7 +83,7 @@ const { error: uploadError } = await supabase.storage
   .upload("slabs.json", newJson, {
     upsert: true,
     contentType: "application/json",
-    cacheControl: "public, max-age=60, stale-while-revalidate=300"
+    cacheControl: "public, max-age=30, stale-while-revalidate=300"
   })
 
 if (uploadError) {
