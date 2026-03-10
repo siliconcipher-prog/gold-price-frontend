@@ -12,7 +12,7 @@
   gtag('config', 'G-K208W91M6L');
 </script>
   <meta charset='UTF-8'>
-  <title>Kozhikode Gold Rate Today – 24K, 22K, 18K Price</title>
+  <title>Kozhikode Gold Rate Today ? 24K, 22K, 18K Price</title>
 
   <meta name="description" content="Check today's gold rate in Kozhikode. Live 24K, 22K & 18K gold prices per gram." />
 
@@ -182,16 +182,6 @@
   <!-- STATUS -->
   <div id="status" class="status"></div>
 
-  <!-- INSIGHT -->
-  <div class="insight-block">
-    <div id="insight" class="daily-insight hidden"></div>
-
-    <div id="insightMeta" class="insight-meta hidden">
-      <div id="goldScore" class="gold-score"></div>
-      <div id="insightBadges" class="insight-badges"></div>
-    </div>
-  </div>
-
   <!-- PRICE GRID -->
   <div id="prices" class="prices hidden">
     <div class="price-card">
@@ -220,6 +210,17 @@
   <button class="estimate-cta" id="estimateJump">
     💍 Estimate Jewellery Price
   </button>
+
+  <!-- INSIGHT -->
+  <div class="insight-block">
+    <div id="insight" class="daily-insight hidden"></div>
+
+    <div id="insightMeta" class="insight-meta hidden">
+      <div id="goldScore" class="gold-score"></div>
+      <div id="goldSignal" class="gold-signal"></div>
+      <div id="insightBadges" class="insight-badges"></div>
+    </div>
+  </div>
 
   <!-- META -->
   <div id="meta" class="meta hidden">
@@ -269,6 +270,20 @@
           <button data-weight="10">10g</button>
           <button data-weight="20">20g</button>
         </div>
+      </div>
+
+      <div class="input-section">
+        <h4>Gold Purity</h4>
+
+        <div class="purity-options">
+          <button class="purity-btn active" data-karat="22K">22K</button>
+          <button class="purity-btn" data-karat="18K">18K</button>
+          <button class="purity-btn" data-karat="24K">24K</button>
+        </div>
+
+        <p class="purity-note">
+          Most jewellery in India is made using 22K gold.
+        </p>
       </div>
 
       <div class="input-section">
@@ -355,6 +370,50 @@
 
     </div>
 
+  </section>
+
+  <section class="pricing-guide">
+    <h3>💡 Understanding Jewellery Price</h3>
+
+    <p class="pricing-intro">
+      When buying gold jewellery, the final price includes more than just the gold rate.
+      Jewellers add additional costs based on craftsmanship, manufacturing and taxes.
+    </p>
+
+    <div class="pricing-grid">
+      <div class="pricing-card">
+        <h4>Gold Value</h4>
+        <p>
+          The base value calculated using the current market gold rate and the weight of the jewellery.
+        </p>
+      </div>
+
+      <div class="pricing-card">
+        <h4>Making Charges</h4>
+        <p>
+          The craftsmanship cost charged by jewellers for designing and manufacturing jewellery.
+        </p>
+      </div>
+
+      <div class="pricing-card">
+        <h4>Wastage</h4>
+        <p>
+          During manufacturing some gold is lost or reshaped, so jewellers add a small percentage
+          (usually 3–10%).
+        </p>
+      </div>
+
+      <div class="pricing-card">
+        <h4>GST</h4>
+        <p>
+          A 3% government tax applied on the final jewellery price in India.
+        </p>
+      </div>
+    </div>
+
+    <p class="pricing-tip">
+      💡 Tip: Always check BIS Hallmark certification when buying gold jewellery.
+    </p>
   </section>
 
 </div>
@@ -446,9 +505,11 @@
 
 <div id="estimateModal" class="est-modal hidden">
   <div class="est-modal-card">
-    <h4>Gold Estimate</h4>
+    <div class="est-modal-head">
+      <h4>Gold Estimate</h4>
+      <button id="closeEstimate" class="est-modal-close" aria-label="Close estimate modal">Close</button>
+    </div>
     <div id="shareCardContent"></div>
-    <button id="closeEstimate">Close</button>
   </div>
 </div>
 
@@ -456,8 +517,5 @@
 
 </body>
 </html>
-
-
-
 
 
