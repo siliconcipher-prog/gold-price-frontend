@@ -1207,8 +1207,9 @@ function renderData(data, options = {}) {
       "24K",
       insightText
     );
+    const limitedBadges = badges.slice(0, 3);
 
-    badges.forEach(b => {
+    limitedBadges.forEach(b => {
       const span = document.createElement("span");
       span.className = `badge ${b.type}`;
       span.textContent = b.text;
@@ -1230,6 +1231,23 @@ function renderData(data, options = {}) {
         }
       });
       scoreEl.dataset.tooltipBound = "1";
+    }
+
+    const signalEl = document.getElementById("goldSignal");
+    if (signalEl) {
+      let signalText = "Neutral Market";
+      let signalClass = "neutral";
+
+      if (score < 40) {
+        signalText = "🟢 Good Buying Opportunity";
+        signalClass = "good";
+      } else if (score > 70) {
+        signalText = "🔴 Prices Elevated";
+        signalClass = "high";
+      }
+
+      signalEl.textContent = signalText;
+      signalEl.className = `gold-signal ${signalClass}`;
     }
 
     insightMeta.classList.remove("hidden");
@@ -1255,12 +1273,12 @@ function renderData(data, options = {}) {
     } else if (change.diff > 0) {
       const scaledDiff = scalePrice(change.diff);
       el.textContent = `\u2191 ${formatRupee(scaledDiff)} (+${change.percent}%)`;
-      el.className = "change up";
+      el.className = "change down";
     } else {
       const scaledDiff = scalePrice(Math.abs(change.diff));
       el.textContent =
         `\u2193 ${formatRupee(scaledDiff)} (-${Math.abs(change.percent)}%)`;
-      el.className = "change down";
+      el.className = "change up";
     }
   });
   currentPrices = data.prices;
@@ -1575,7 +1593,7 @@ function animateEstimatorUpdate() {
   setTimeout(() => {
     breakdown.classList.remove("is-updating");
     finalRow.classList.remove("is-updating");
-  }, 360);
+  }, 300);
 }
 
 // ADVANCED CALCULATOR
@@ -1605,7 +1623,8 @@ function updateAdvancedCalc() {
     return;
   }
 
-  const karat = document.querySelector(".karat-btn.active").dataset.karat;
+  const karatBtn = document.querySelector(".purity-btn.active");
+  const karat = karatBtn ? karatBtn.dataset.karat : "22K";
   const price = currentPrices[karat];
 
   const base = weight * price;
@@ -1657,14 +1676,30 @@ document.querySelectorAll(".weight-presets button")
 
 btn.addEventListener("click",()=>{
 
-document.getElementById("advWeight").value=
-btn.dataset.weight
+const weightInput =
+document.getElementById("weightInput") ||
+document.getElementById("advWeight");
+
+if (weightInput) {
+  weightInput.value = btn.dataset.weight;
+}
 
 updateAdvancedCalc()
 
 })
 
 })
+
+document.querySelectorAll(".purity-btn")
+.forEach(btn => {
+  btn.addEventListener("click", () => {
+    document.querySelectorAll(".purity-btn")
+      .forEach(b => b.classList.remove("active"));
+
+    btn.classList.add("active");
+    updateAdvancedCalc();
+  });
+});
 
 document.querySelectorAll(".j-type")
 .forEach(btn=>{
@@ -1717,9 +1752,6 @@ document.getElementById("shareEstimate")
 
   const html = `
   <div class="estimate-share-card">
-
-    <h3>Gold Estimate</h3>
-
     <div class="estimate-row">
       <span>Weight</span>
       <strong>${weight || "-"} g</strong>
@@ -1789,11 +1821,6 @@ document.addEventListener("DOMContentLoaded", () => {
   clearOldCaches();
   ensureWeightToggle();
   ensureShareButton();
-  const insight = document.getElementById("insight");
-  const badges = document.getElementById("insightBadges");
-  if (insight && badges) {
-    insight.appendChild(badges);
-  }
   let city;
 
   if (isHomePage()) {
