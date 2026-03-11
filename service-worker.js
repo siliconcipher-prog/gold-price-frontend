@@ -1,5 +1,5 @@
-const STATIC_CACHE = "gold-rate-cache-v1";
-const API_CACHE = "gold-rate-api-cache-v1";
+const STATIC_CACHE = "gold-rate-cache-v2";
+const API_CACHE = "gold-rate-api-cache-v2";
 
 const STATIC_ASSETS = [
   "/",
@@ -63,6 +63,20 @@ self.addEventListener("fetch", event => {
   if (request.method !== "GET") return;
 
   const url = new URL(request.url);
+
+  // Network-first for page navigations so latest HTML is picked up.
+  if (request.mode === "navigate") {
+    event.respondWith(
+      fetch(request)
+        .then(response => {
+          const cloned = response.clone();
+          caches.open(STATIC_CACHE).then(cache => cache.put(request, cloned));
+          return response;
+        })
+        .catch(() => caches.match(request))
+    );
+    return;
+  }
 
   // Network-first for API JSON endpoints
   if (isApiJson(url)) {

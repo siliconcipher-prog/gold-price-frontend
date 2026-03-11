@@ -29,7 +29,7 @@
   <link rel="icon" type="image/png" sizes="16x16" href="/icons/favicon-16x16.png">
   <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
 
-  <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="style.css?v=20260312" />
   <link
     rel="preload"
     href="https://rxdmyncafckkpmizpcgu.supabase.co/storage/v1/object/public/data/slabs.json"
@@ -267,6 +267,33 @@
     </div>
   </div>
 
+  <section class="monthly-stats" id="monthlyStats">
+    <h3>Monthly Gold Stats</h3>
+    <p id="statsSubtitle">India • 24K • per gram</p>
+    <div class="stats-grid">
+      <div class="stat-card">
+        <span>High</span>
+        <strong id="mHigh">-</strong>
+      </div>
+      <div class="stat-card">
+        <span>Low</span>
+        <strong id="mLow">-</strong>
+      </div>
+      <div class="stat-card">
+        <span>Average</span>
+        <strong id="mAvg">-</strong>
+      </div>
+      <div class="stat-card">
+        <span>Monthly Change</span>
+        <strong id="mChange">-</strong>
+      </div>
+      <div class="stat-card">
+        <span>Volatility</span>
+        <strong id="mVolatility">-</strong>
+      </div>
+    </div>
+  </section>
+
   <section id="estimator" class="estimator">
 
     <h3>Jewellery Estimator</h3>
@@ -394,6 +421,37 @@
 
     </div>
 
+  </section>
+
+  <section class="portfolio-section" id="portfolioSection">
+    <div class="portfolio-head">
+      <div>
+        <h3>My Gold Portfolio</h3>
+        <p class="portfolio-note">Track the current value of the gold you own.</p>
+      </div>
+      <button id="openPortfolioModal" class="portfolio-add-btn" type="button">Add Gold Item</button>
+    </div>
+
+    <div class="portfolio-summary">
+      <div class="portfolio-summary-card">
+        <span>Total Gold Weight</span>
+        <strong id="portfolioTotalWeight">-</strong>
+      </div>
+      <div class="portfolio-summary-card">
+        <span>Total Investment</span>
+        <strong id="portfolioTotalInvestment">-</strong>
+      </div>
+      <div class="portfolio-summary-card">
+        <span>Current Value</span>
+        <strong id="portfolioCurrentValue">-</strong>
+      </div>
+      <div class="portfolio-summary-card">
+        <span>Total Profit/Loss</span>
+        <strong id="portfolioProfitLoss">-</strong>
+      </div>
+    </div>
+
+    <div id="portfolioList" class="portfolio-list"></div>
   </section>
 
   <section class="pricing-guide">
@@ -536,6 +594,51 @@
   </div>
 </div>
 
-<script src="app.js?v=20260211"></script>
+<div id="portfolioModal" class="portfolio-modal hidden">
+  <div class="portfolio-modal-card">
+    <div class="portfolio-modal-head">
+      <h4>Add Gold Item</h4>
+      <button id="closePortfolioModal" class="portfolio-close-btn" type="button" aria-label="Close portfolio modal">Close</button>
+    </div>
+
+    <form id="portfolioForm" class="portfolio-form">
+      <label>
+        <span>Name</span>
+        <input id="portfolioName" type="text" placeholder="Wedding Ring" required>
+      </label>
+
+      <label>
+        <span>Weight (grams)</span>
+        <input id="portfolioWeight" type="number" min="0.01" step="0.01" placeholder="10" required>
+      </label>
+
+      <label>
+        <span>Karat</span>
+        <select id="portfolioKarat" required>
+          <option value="24K">24K</option>
+          <option value="22K" selected>22K</option>
+          <option value="18K">18K</option>
+        </select>
+      </label>
+
+      <label>
+        <span>Buy Price</span>
+        <input id="portfolioBuyPrice" type="number" min="0" step="0.01" placeholder="6200" required>
+      </label>
+
+      <label>
+        <span>Buy Date</span>
+        <input id="portfolioBuyDate" type="date" required>
+      </label>
+
+      <div class="portfolio-form-actions">
+        <button type="button" id="cancelPortfolioModal" class="portfolio-secondary-btn">Cancel</button>
+        <button type="submit" class="portfolio-primary-btn">Save</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script src="app.js?v=20260312"></script>
 </body>
 </html>

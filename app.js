@@ -16,6 +16,7 @@ let currentData = null;
 let isLoading = false;
 let lastWeightToggleAt = 0;
 const ANALYSIS_WINDOW_DAYS = 30;
+const PORTFOLIO_STORAGE_KEY = "goldPortfolio";
 
 const WEIGHT_TOGGLE_DEBOUNCE_MS = 220;
 const PRICE_ANIMATION_MS = 340;
@@ -757,6 +758,160 @@ function setRangeButtonsLoading(loading) {
   });
 }
 
+function ensureMonthlyStatsSection() {
+  let section = document.getElementById("monthlyStats");
+  if (section) return section;
+
+  const chartWrapper = document.getElementById("chartWrapper");
+  if (!chartWrapper) return null;
+
+  section = document.createElement("section");
+  section.id = "monthlyStats";
+  section.className = "monthly-stats";
+  section.innerHTML = `
+    <h3>Monthly Gold Stats</h3>
+    <p id="statsSubtitle">India • 24K • per gram</p>
+    <div class="stats-grid">
+      <div class="stat-card">
+        <span>High</span>
+        <strong id="mHigh">-</strong>
+      </div>
+      <div class="stat-card">
+        <span>Low</span>
+        <strong id="mLow">-</strong>
+      </div>
+      <div class="stat-card">
+        <span>Average</span>
+        <strong id="mAvg">-</strong>
+      </div>
+      <div class="stat-card">
+        <span>Monthly Change</span>
+        <strong id="mChange">-</strong>
+      </div>
+      <div class="stat-card">
+        <span>Volatility</span>
+        <strong id="mVolatility">-</strong>
+      </div>
+    </div>
+  `;
+
+  const estimator = document.getElementById("estimator");
+  if (estimator) {
+    estimator.parentNode.insertBefore(section, estimator);
+  } else {
+    chartWrapper.insertAdjacentElement("afterend", section);
+  }
+
+  return section;
+}
+
+function ensurePortfolioSection() {
+  let section = document.getElementById("portfolioSection");
+  if (section) return section;
+
+  const pricingGuide = document.querySelector(".pricing-guide");
+  const estimator = document.getElementById("estimator");
+  if (!pricingGuide && !estimator) return null;
+
+  section = document.createElement("section");
+  section.id = "portfolioSection";
+  section.className = "portfolio-section";
+  section.innerHTML = `
+    <div class="portfolio-head">
+      <div>
+        <h3>My Gold Portfolio</h3>
+        <p class="portfolio-note">Track the current value of the gold you own.</p>
+      </div>
+      <button id="openPortfolioModal" class="portfolio-add-btn" type="button">Add Gold Item</button>
+    </div>
+
+    <div class="portfolio-summary">
+      <div class="portfolio-summary-card">
+        <span>Total Gold Weight</span>
+        <strong id="portfolioTotalWeight">-</strong>
+      </div>
+      <div class="portfolio-summary-card">
+        <span>Total Investment</span>
+        <strong id="portfolioTotalInvestment">-</strong>
+      </div>
+      <div class="portfolio-summary-card">
+        <span>Current Value</span>
+        <strong id="portfolioCurrentValue">-</strong>
+      </div>
+      <div class="portfolio-summary-card">
+        <span>Total Profit/Loss</span>
+        <strong id="portfolioProfitLoss">-</strong>
+      </div>
+    </div>
+
+    <div id="portfolioList" class="portfolio-list"></div>
+  `;
+
+  if (pricingGuide && pricingGuide.parentNode) {
+    pricingGuide.parentNode.insertBefore(section, pricingGuide);
+  } else if (estimator && estimator.parentNode) {
+    estimator.insertAdjacentElement("afterend", section);
+  }
+
+  return section;
+}
+
+function ensurePortfolioModal() {
+  let modal = document.getElementById("portfolioModal");
+  if (modal) return modal;
+
+  modal = document.createElement("div");
+  modal.id = "portfolioModal";
+  modal.className = "portfolio-modal hidden";
+  modal.innerHTML = `
+    <div class="portfolio-modal-card">
+      <div class="portfolio-modal-head">
+        <h4>Add Gold Item</h4>
+        <button id="closePortfolioModal" class="portfolio-close-btn" type="button" aria-label="Close portfolio modal">Close</button>
+      </div>
+
+      <form id="portfolioForm" class="portfolio-form">
+        <label>
+          <span>Name</span>
+          <input id="portfolioName" type="text" placeholder="Wedding Ring" required>
+        </label>
+
+        <label>
+          <span>Weight (grams)</span>
+          <input id="portfolioWeight" type="number" min="0.01" step="0.01" placeholder="10" required>
+        </label>
+
+        <label>
+          <span>Karat</span>
+          <select id="portfolioKarat" required>
+            <option value="24K">24K</option>
+            <option value="22K" selected>22K</option>
+            <option value="18K">18K</option>
+          </select>
+        </label>
+
+        <label>
+          <span>Buy Price</span>
+          <input id="portfolioBuyPrice" type="number" min="0" step="0.01" placeholder="6200" required>
+        </label>
+
+        <label>
+          <span>Buy Date</span>
+          <input id="portfolioBuyDate" type="date" required>
+        </label>
+
+        <div class="portfolio-form-actions">
+          <button type="button" id="cancelPortfolioModal" class="portfolio-secondary-btn">Cancel</button>
+          <button type="submit" class="portfolio-primary-btn">Save</button>
+        </div>
+      </form>
+    </div>
+  `;
+
+  document.body.appendChild(modal);
+  return modal;
+}
+
 /* =========================
    AUTOCOMPLETE (FIXED)
 ========================= */
@@ -1440,12 +1595,335 @@ function renderData(data, options = {}) {
   });
   currentPrices = data.prices;
   updateAdvancedCalc();
+  updateMonthlyStats(data.history);
+  renderPortfolio();
 
   renderCurrentChart();
 
   document.getElementById("updated").innerHTML =
     `<span class="updated-main">Updated: ${formatUpdatedTimestamp(data.last_updated)}</span>` +
     `<span class="updated-sub">Unit: ${currentWeight}g</span>`;
+}
+
+function getMonthlyStats(history, karat = "24K") {
+  if (!Array.isArray(history) || history.length === 0) return null;
+
+  const latestRow = history
+    .slice()
+    .sort((a, b) =>
+      new Date(a.date || a.recorded_on || a.recorded_at) -
+      new Date(b.date || b.recorded_on || b.recorded_at)
+    )
+    .at(-1);
+  if (!latestRow) return null;
+
+  const latestDate = new Date(
+    latestRow.date || latestRow.recorded_on || latestRow.recorded_at
+  );
+  if (Number.isNaN(latestDate.getTime())) return null;
+
+  const currentMonth = latestDate.getMonth();
+  const currentYear = latestDate.getFullYear();
+
+  const monthRows = history
+    .filter(row => {
+      const dt = new Date(row.date || row.recorded_on || row.recorded_at);
+      return (
+        !Number.isNaN(dt.getTime()) &&
+        dt.getMonth() === currentMonth &&
+        dt.getFullYear() === currentYear
+      );
+    })
+    .sort((a, b) =>
+      new Date(a.date || a.recorded_on || a.recorded_at) -
+      new Date(b.date || b.recorded_on || b.recorded_at)
+    );
+
+  if (!monthRows.length) return null;
+
+  const prices = monthRows
+    .map(row => getKaratValue(row, karat))
+    .filter(v => typeof v === "number" && Number.isFinite(v));
+
+  if (!prices.length) return null;
+
+  const high = Math.max(...prices);
+  const low = Math.min(...prices);
+  const avg = prices.reduce((a, b) => a + b, 0) / prices.length;
+  const startPrice = prices[0];
+  const endPrice = prices[prices.length - 1];
+  const change = endPrice - startPrice;
+  const range = high - low;
+
+  let volatility = "Low";
+  if (range < 100) {
+    volatility = "Low";
+  } else if (range < 300) {
+    volatility = "Medium";
+  } else {
+    volatility = "High";
+  }
+
+  return {
+    high,
+    low,
+    avg,
+    change,
+    volatility
+  };
+}
+
+function updateMonthlyStats(history) {
+  ensureMonthlyStatsSection();
+
+  const subtitleEl = document.getElementById("statsSubtitle");
+  const highEl = document.getElementById("mHigh");
+  const lowEl = document.getElementById("mLow");
+  const avgEl = document.getElementById("mAvg");
+  const changeEl = document.getElementById("mChange");
+  const volatilityEl = document.getElementById("mVolatility");
+
+  if (
+    !subtitleEl ||
+    !highEl ||
+    !lowEl ||
+    !avgEl ||
+    !changeEl ||
+    !volatilityEl
+  ) return;
+
+  const city =
+    currentData?.city ||
+    getSelectedCity() ||
+    getCityFromURL() ||
+    "India";
+  subtitleEl.textContent = `${city} • ${currentKarat} • per gram`;
+
+  const stats = getMonthlyStats(history, currentKarat);
+  if (!stats) {
+    subtitleEl.textContent = `${city} • ${currentKarat} • per gram`;
+    highEl.textContent = "-";
+    lowEl.textContent = "-";
+    avgEl.textContent = "-";
+    changeEl.textContent = "-";
+    changeEl.className = "";
+    volatilityEl.textContent = "-";
+    return;
+  }
+
+  highEl.textContent = formatRupee(stats.high);
+  lowEl.textContent = formatRupee(stats.low);
+  avgEl.textContent = formatRupee(stats.avg);
+
+  const signed = stats.change > 0 ? "+" : "";
+  changeEl.textContent = `${signed}${formatRupee(stats.change)}`;
+  changeEl.className =
+    stats.change > 0
+      ? "up"
+      : stats.change < 0
+        ? "down"
+        : "";
+
+  volatilityEl.textContent = stats.volatility;
+}
+
+function generatePortfolioItemId() {
+  if (window.crypto && typeof window.crypto.randomUUID === "function") {
+    return window.crypto.randomUUID();
+  }
+  return `portfolio-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+}
+
+function loadPortfolio() {
+  try {
+    const raw = localStorage.getItem(PORTFOLIO_STORAGE_KEY);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+}
+
+function savePortfolio(items) {
+  localStorage.setItem(PORTFOLIO_STORAGE_KEY, JSON.stringify(items));
+}
+
+function getPortfolioMarkup(item) {
+  const currentPrice = currentPrices?.[item.karat];
+  const currentValue =
+    typeof currentPrice === "number" ? item.weight * currentPrice : null;
+  const invested = item.weight * item.buyPrice;
+  const profit =
+    typeof currentValue === "number" ? currentValue - invested : null;
+  const profitClass =
+    profit > 0 ? "up" : profit < 0 ? "down" : "";
+
+  return `
+    <article class="portfolio-card" data-id="${item.id}">
+      <div class="portfolio-card-head">
+        <div>
+          <h4>${item.name}</h4>
+          <p>${item.weight}g • ${item.karat}</p>
+        </div>
+        <button class="portfolio-delete-btn" type="button" data-id="${item.id}">Delete</button>
+      </div>
+      <div class="portfolio-card-grid">
+        <div>
+          <span>Buy price</span>
+          <strong>${formatRupee(item.buyPrice)}/g</strong>
+        </div>
+        <div>
+          <span>Current price</span>
+          <strong>${typeof currentPrice === "number" ? `${formatRupee(currentPrice)}/g` : "-"}</strong>
+        </div>
+        <div>
+          <span>Investment</span>
+          <strong>${formatRupee(invested)}</strong>
+        </div>
+        <div>
+          <span>Current value</span>
+          <strong>${typeof currentValue === "number" ? formatRupee(currentValue) : "-"}</strong>
+        </div>
+        <div class="portfolio-profit ${profitClass}">
+          <span>Profit/Loss</span>
+          <strong>${typeof profit === "number" ? formatRupee(profit) : "-"}</strong>
+        </div>
+        <div>
+          <span>Buy date</span>
+          <strong>${item.buyDate || "-"}</strong>
+        </div>
+      </div>
+    </article>
+  `;
+}
+
+function renderPortfolio() {
+  ensurePortfolioSection();
+
+  const listEl = document.getElementById("portfolioList");
+  const totalWeightEl = document.getElementById("portfolioTotalWeight");
+  const totalInvestmentEl = document.getElementById("portfolioTotalInvestment");
+  const currentValueEl = document.getElementById("portfolioCurrentValue");
+  const totalProfitEl = document.getElementById("portfolioProfitLoss");
+
+  if (!listEl || !totalWeightEl || !totalInvestmentEl || !currentValueEl || !totalProfitEl) {
+    return;
+  }
+
+  const items = loadPortfolio();
+  if (!items.length) {
+    listEl.innerHTML = `<div class="portfolio-empty">No gold items added yet.</div>`;
+    totalWeightEl.textContent = "-";
+    totalInvestmentEl.textContent = "-";
+    currentValueEl.textContent = "-";
+    totalProfitEl.textContent = "-";
+    totalProfitEl.className = "";
+    return;
+  }
+
+  let totalWeight = 0;
+  let totalInvestment = 0;
+  let totalCurrentValue = 0;
+  const hasLivePrices = Boolean(currentPrices);
+
+  items.forEach(item => {
+    totalWeight += Number(item.weight) || 0;
+    totalInvestment += (Number(item.weight) || 0) * (Number(item.buyPrice) || 0);
+    if (typeof currentPrices?.[item.karat] === "number") {
+      totalCurrentValue += (Number(item.weight) || 0) * currentPrices[item.karat];
+    }
+  });
+
+  const totalProfit = totalCurrentValue - totalInvestment;
+
+  totalWeightEl.textContent = `${totalWeight.toLocaleString("en-IN", {
+    minimumFractionDigits: totalWeight % 1 ? 2 : 0,
+    maximumFractionDigits: 2
+  })} g`;
+  totalInvestmentEl.textContent = formatRupee(totalInvestment);
+  currentValueEl.textContent = hasLivePrices ? formatRupee(totalCurrentValue) : "-";
+  totalProfitEl.textContent = hasLivePrices ? formatRupee(totalProfit) : "-";
+  totalProfitEl.className =
+    !hasLivePrices ? "" : totalProfit > 0 ? "up" : totalProfit < 0 ? "down" : "";
+
+  listEl.innerHTML = items.map(getPortfolioMarkup).join("");
+}
+
+function addPortfolioItem(item) {
+  const items = loadPortfolio();
+  items.push(item);
+  savePortfolio(items);
+  renderPortfolio();
+}
+
+function deletePortfolioItem(id) {
+  const items = loadPortfolio().filter(item => item.id !== id);
+  savePortfolio(items);
+  renderPortfolio();
+}
+
+function openPortfolioModal() {
+  document.getElementById("portfolioModal")?.classList.remove("hidden");
+}
+
+function closePortfolioModal() {
+  document.getElementById("portfolioModal")?.classList.add("hidden");
+}
+
+function bindPortfolioUi() {
+  ensurePortfolioSection();
+  ensurePortfolioModal();
+
+  const trigger = document.getElementById("openPortfolioModal");
+  if (trigger?.dataset.bound === "1") return;
+
+  document.getElementById("openPortfolioModal")
+    ?.addEventListener("click", openPortfolioModal);
+  document.getElementById("closePortfolioModal")
+    ?.addEventListener("click", closePortfolioModal);
+  document.getElementById("cancelPortfolioModal")
+    ?.addEventListener("click", closePortfolioModal);
+
+  document.getElementById("portfolioForm")
+    ?.addEventListener("submit", event => {
+      event.preventDefault();
+
+      const name = document.getElementById("portfolioName")?.value.trim();
+      const weight = Number(document.getElementById("portfolioWeight")?.value);
+      const karat = document.getElementById("portfolioKarat")?.value;
+      const buyPrice = Number(document.getElementById("portfolioBuyPrice")?.value);
+      const buyDate = document.getElementById("portfolioBuyDate")?.value;
+
+      if (!name || !weight || weight <= 0 || !karat || !buyPrice || buyPrice <= 0 || !buyDate) {
+        return;
+      }
+
+      addPortfolioItem({
+        id: generatePortfolioItemId(),
+        name,
+        weight,
+        karat,
+        buyPrice,
+        buyDate
+      });
+
+      event.target.reset();
+      const karatField = document.getElementById("portfolioKarat");
+      if (karatField) karatField.value = "22K";
+      closePortfolioModal();
+    });
+
+  document.getElementById("portfolioList")
+    ?.addEventListener("click", event => {
+      const btn = event.target.closest(".portfolio-delete-btn");
+      if (!btn) return;
+      deletePortfolioItem(btn.dataset.id);
+    });
+
+  if (trigger) {
+    trigger.dataset.bound = "1";
+  }
 }
 /* =========================
    CHART
@@ -2114,7 +2592,19 @@ document.addEventListener("click", e => {
   ) {
     feedbackPanel.classList.add("hidden");
   }
+
+  const portfolioModal = document.getElementById("portfolioModal");
+  if (
+    portfolioModal &&
+    !portfolioModal.classList.contains("hidden") &&
+    e.target === portfolioModal
+  ) {
+    closePortfolioModal();
+  }
 });
+
+bindPortfolioUi();
+renderPortfolio();
 
 if ("serviceWorker" in navigator) {
   window.addEventListener("load", () => {
