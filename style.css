@@ -558,6 +558,7 @@ input:focus {
   border: 1px solid rgba(212, 175, 55, 0.3);
   border-radius: 18px;
 
+  line-height:1.5;
   font-size: 14px;
   font-weight: 600;
   letter-spacing: 0.2px;
@@ -586,29 +587,44 @@ input:focus {
   opacity: 0.4;
 }
 
+.insight-footnote{
+  display:block;
+  margin-top:8px;
+  font-size:12px;
+  font-weight:500;
+  opacity:0.78;
+}
+
 .insight-block {
   margin-top: 18px;
 }
 
 .insight-meta {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 12px;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  gap:6px;
   margin-top: 10px;
 }
 
+.insight-summary{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  flex-wrap:wrap;
+  gap:8px;
+}
+
 .gold-score {
-  min-width: 90px;
-  padding: 8px 10px;
-  border-radius: 14px;
-  font-size: 12px;
-  font-weight: 700;
-  text-align: center;
-  background: linear-gradient(135deg, rgba(212,175,55,0.15), rgba(212,175,55,0.05));
-  border: 1px solid rgba(212,175,55,0.3);
-  color: #d4af37;
-  letter-spacing: 0.4px;
+  padding:6px 14px;
+  border-radius:999px;
+  font-size:13px;
+  font-weight:700;
+  line-height:1.1;
+  white-space:nowrap;
+  background:rgba(212,175,55,0.12);
+  border:1px solid rgba(212,175,55,0.35);
+  color:#d4af37;
   position: relative;
   cursor: pointer;
 }
@@ -619,7 +635,8 @@ input:focus {
   bottom: 120%;
   left: 50%;
   transform: translateX(-50%);
-  width: 220px;
+  width: min(320px, 85vw);
+  max-width: 85vw;
   padding: 10px 12px;
   border-radius: 12px;
   background: #11141a;
@@ -628,10 +645,12 @@ input:focus {
   font-size: 11px;
   line-height: 1.4;
   text-align: left;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  word-break: break-word;
   opacity: 0;
   pointer-events: none;
-  transition: opacity 0.2s ease, transform 0.2s ease;
-  box-shadow: 0 12px 24px rgba(0,0,0,0.4);
+  transition: opacity 0.2s ease;
   z-index: 50;
 }
 
@@ -639,7 +658,16 @@ input:focus {
 .gold-score:focus::after,
 .gold-score:focus-visible::after {
   opacity: 1;
-  transform: translateX(-50%) translateY(-4px);
+}
+
+@media (max-width:480px){
+  .gold-score::after{
+    left: 0;
+    right: auto;
+    transform:none;
+    width: min(300px, 90vw);
+    max-width:90vw;
+  }
 }
 
 /* =========================
@@ -2428,22 +2456,34 @@ input[type=number]::-webkit-outer-spin-button {
 }
 
 .gold-signal{
-  margin-top:6px;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  padding:6px 14px;
+  border-radius:999px;
   font-size:13px;
   font-weight:600;
-  text-align:center;
+  line-height:1.1;
+  white-space:nowrap;
+  margin-top:0;
 }
 
 .gold-signal.good{
+  background:rgba(34,197,94,0.15);
   color:#22c55e;
-}
-
-.gold-signal.high{
-  color:#ef4444;
+  border:1px solid rgba(34,197,94,0.35);
 }
 
 .gold-signal.neutral{
+  background:rgba(234,179,8,0.15);
   color:#eab308;
+  border:1px solid rgba(234,179,8,0.35);
+}
+
+.gold-signal.high{
+  background:rgba(239,68,68,0.15);
+  color:#ef4444;
+  border:1px solid rgba(239,68,68,0.35);
 }
 
 .pricing-explainer{
@@ -2476,15 +2516,40 @@ input[type=number]::-webkit-outer-spin-button {
   border-radius:999px;
   font-size:11px;
   font-weight:700;
-  letter-spacing:.5px;
+  letter-spacing:.4px;
+  text-transform:none;
 }
 
 .insight-badges{
   display:flex;
   flex-wrap:wrap;
-  gap:6px;
-  margin-top:10px;
   justify-content:center;
+  gap:6px;
+  margin-top:4px;
+}
+
+.badge.green{
+  background:rgba(34,197,94,0.12);
+  color:#22c55e;
+  border:1px solid rgba(34,197,94,0.3);
+}
+
+.badge.red{
+  background:rgba(239,68,68,0.12);
+  color:#ef4444;
+  border:1px solid rgba(239,68,68,0.3);
+}
+
+.badge.blue{
+  background:rgba(59,130,246,0.12);
+  color:#3b82f6;
+  border:1px solid rgba(59,130,246,0.3);
+}
+
+.badge.yellow{
+  background:rgba(234,179,8,0.12);
+  color:#eab308;
+  border:1px solid rgba(234,179,8,0.3);
 }
 
 .pricing-guide{

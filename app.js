@@ -15,6 +15,7 @@ let currentPrices = null;
 let currentData = null;
 let isLoading = false;
 let lastWeightToggleAt = 0;
+const ANALYSIS_WINDOW_DAYS = 30;
 
 const WEIGHT_TOGGLE_DEBOUNCE_MS = 220;
 const PRICE_ANIMATION_MS = 340;
@@ -138,7 +139,7 @@ function getCityFromURL() {
 ========================= */
 
 function cacheKey(city) {
-  return `gold:${city.toLowerCase()}:${currentRange}`;
+  return `gold:${city.toLowerCase()}`;
 }
 
 function saveCache(city, data) {
@@ -252,8 +253,7 @@ async function getCityPrice(city) {
         (a, b) => new Date(a.date) - new Date(b.date)
       )
     : [];
-  const scopedHistory = history.slice(-currentRange);
-  const latest = scopedHistory.at(-1) || history.at(-1) || null;
+  const latest = history.at(-1) || null;
   const current = latest
     ? {
         "24K": Number(latest["24K"]),
@@ -267,7 +267,7 @@ async function getCityPrice(city) {
     slab,
     prices: current,
     current,
-    history: scopedHistory,
+    history,
     last_updated: slabsLastUpdated || new Date().toISOString()
   };
 }
@@ -920,99 +920,237 @@ function generateDailyInsight(city, history, karat) {
   return `➖ Gold prices remained stable in ${city}.`;
 }
 
-function generateInsightBadges(history, karat, insightText) {
-  if (!history || history.length < 2) return [];
+function getAnalysisHistory(history) {
+  if (!Array.isArray(history) || !history.length) return [];
+  return history.slice(-ANALYSIS_WINDOW_DAYS);
+}
 
-  const prices = history.map(h => h[karat]);
+function getMarketAnalysis(history, karat) {
+  const analysisHistory = getAnalysisHistory(history);
+  const prices = analysisHistory
+    .map(h => getKaratValue(h, karat))
+    .filter(v => typeof v === "number" && Number.isFinite(v));
+
+  if (prices.length < 2) {
+    return {
+      today: 0,
+      min: 0,
+      max: 0,
+      score: 50,
+      zone: "MID RANGE",
+      trend: "SIDEWAYS",
+      trendSentence: "stable momentum",
+      volatility: "LOW VOLATILITY",
+      volatilitySentence: "low",
+      signal: "WATCH MARKET",
+      signalSentence: "market watch conditions"
+    };
+  }
+
   const today = prices.at(-1);
   const min = Math.min(...prices);
   const max = Math.max(...prices);
+  const range = max - min;
+  const movingAvg30 =
+    prices.reduce((sum, p) => sum + p, 0) / prices.length;
 
-  const range = max - min || 1;
-  const position = (today - min) / range;
-  const rangePercent = (range / min) * 100;
+  let score = 50;
+  if (range > 0) {
+    score = ((today - min) / range) * 100;
+  }
+  score = Math.max(0, Math.min(100, Math.round(score)));
 
-  const badges = [];
+  let zone = "MID RANGE";
+  if (score < 35) zone = "LOW ZONE";
+  else if (score > 65) zone = "HIGH ZONE";
 
-  // Do NOT duplicate if insight already says high/low
-  const insightLower = insightText.toLowerCase();
+  let trend = "SIDEWAYS";
+  let trendSentence = "stable momentum";
+  const maDeltaPct = movingAvg30 > 0
+    ? ((today - movingAvg30) / movingAvg30) * 100
+    : 0;
 
-  const isHighInsight = insightLower.includes("high");
-  const isLowInsight = insightLower.includes("low");
-
-  // HIGH / LOW ZONE (only if not already headline)
-  if (!isLowInsight && position <= 0.15) {
-    badges.push({ text: "LOW ZONE", type: "green" });
+  if (maDeltaPct > 3) {
+    trend = "STRONG UPTREND";
+    trendSentence = "strong upward momentum";
+  } else if (maDeltaPct > 1) {
+    trend = "UPTREND";
+    trendSentence = "moderate upward momentum";
+  } else if (maDeltaPct < -1) {
+    trend = "DOWNTREND";
+    trendSentence = "downward momentum";
   }
 
-  if (!isHighInsight && position >= 0.85) {
-    badges.push({ text: "HIGH ZONE", type: "red" });
-  }
-
-  // Weekly Momentum (7-day change)
-  if (history.length >= 7) {
-    const prev7 = history[history.length - 7][karat];
-    const weeklyChange = ((today - prev7) / prev7) * 100;
-
-    if (weeklyChange > 3) {
-      badges.push({ text: "STRONG UPTREND", type: "blue" });
-    }
-
-    if (weeklyChange < -3) {
-      badges.push({ text: "STRONG DOWNTREND", type: "blue" });
-    }
-  }
-
-  // Volatility
-  if (rangePercent > 4) {
-    badges.push({ text: "HIGH VOLATILITY", type: "yellow" });
-  } else if (rangePercent < 1.5) {
-    badges.push({ text: "STABLE RANGE", type: "blue" });
-  }
-
-  // Reversal (3 down then up)
-  if (history.length >= 4) {
-    const d1 = prices.at(-2);
-    const d2 = prices.at(-3);
-    const d3 = prices.at(-4);
-
-    if (d3 > d2 && d2 > d1 && today > d1) {
-      badges.push({ text: "REVERSAL SIGNAL", type: "yellow" });
+  const dailyPctChanges = [];
+  for (let i = 1; i < prices.length; i++) {
+    const prev = prices[i - 1];
+    const curr = prices[i];
+    if (prev > 0) {
+      dailyPctChanges.push(((curr - prev) / prev) * 100);
     }
   }
 
-  return badges;
+  let volatilityStd = 0;
+  if (dailyPctChanges.length) {
+    const mean =
+      dailyPctChanges.reduce((sum, v) => sum + v, 0) /
+      dailyPctChanges.length;
+    const variance =
+      dailyPctChanges.reduce((sum, v) => sum + Math.pow(v - mean, 2), 0) /
+      dailyPctChanges.length;
+    volatilityStd = Math.sqrt(variance);
+  }
+
+  let volatility = "LOW VOLATILITY";
+  let volatilitySentence = "low";
+  if (volatilityStd > 2) {
+    volatility = "EXTREME VOLATILITY";
+    volatilitySentence = "extreme";
+  } else if (volatilityStd > 1.2) {
+    volatility = "HIGH VOLATILITY";
+    volatilitySentence = "high";
+  } else if (volatilityStd >= 0.5) {
+    volatility = "MODERATE VOLATILITY";
+    volatilitySentence = "moderate";
+  } else {
+    volatility = "LOW VOLATILITY";
+    volatilitySentence = "low";
+  }
+
+  const isUptrend = trend === "UPTREND" || trend === "STRONG UPTREND";
+  let signal = "WATCH MARKET";
+  let signalSentence = "market watch conditions";
+
+  if (trend === "DOWNTREND") {
+    signal = "WAIT BEFORE BUYING";
+    signalSentence = "wait-before-buying conditions";
+  } else if (zone === "HIGH ZONE") {
+    signal = "PRICES ELEVATED";
+    signalSentence = "prices may be overheated";
+  } else if (zone === "LOW ZONE" && isUptrend) {
+    signal = "GOOD BUY WINDOW";
+    signalSentence = "a favorable buying window";
+  } else if (zone === "MID RANGE" && isUptrend) {
+    signal = "WATCH MARKET";
+    signalSentence = "a market watch phase";
+  }
+
+  return {
+    today,
+    min,
+    max,
+    score,
+    zone,
+    trend,
+    trendSentence,
+    volatility,
+    volatilitySentence,
+    signal,
+    signalSentence
+  };
+}
+
+function generateMarketSummary(data) {
+  const { zone, trend, volatility, signal } = data;
+
+  let primary = "Gold prices are currently average. It is okay to buy, but prices are not particularly low.";
+  if (signal === "GOOD BUY WINDOW") {
+    primary = "Gold prices are currently low compared to recent trends. This may be a good time to buy.";
+  } else if (signal === "PRICES ELEVATED") {
+    primary = "Gold prices are relatively high compared to recent trends. You may want to wait before buying.";
+  } else if (signal === "WAIT BEFORE BUYING") {
+    primary = "Gold prices are currently trending downward. Waiting may give a better price.";
+  }
+
+  let zoneSimple = "Prices are in the middle of the recent range.";
+  if (zone === "LOW ZONE") {
+    zoneSimple = "Prices are near the lower end of the recent range.";
+  } else if (zone === "HIGH ZONE") {
+    zoneSimple = "Prices are near the higher end of the recent range.";
+  }
+
+  let trendSimple = "Prices are moving sideways.";
+  if (trend === "UPTREND" || trend === "STRONG UPTREND") {
+    trendSimple = "Prices are trending upward.";
+  } else if (trend === "DOWNTREND") {
+    trendSimple = "Prices are trending downward.";
+  }
+
+  const volatilitySimple =
+    volatility === "LOW VOLATILITY"
+      ? "Price movement is stable right now."
+      : "Market volatility means prices may change quickly.";
+
+  const technical =
+    `Technical view: ${zone.toLowerCase()}, ${trend.toLowerCase()}, ${volatility.toLowerCase()}.`;
+
+  const secondary = `${zoneSimple} ${trendSimple} ${volatilitySimple}`;
+  return `${primary} ${secondary} ${technical}`;
+}
+
+function generateInsightBadges(history, karat, insightText) {
+  void insightText;
+  const analysis = getMarketAnalysis(history, karat);
+
+  const zoneType =
+    analysis.zone === "LOW ZONE"
+      ? "green"
+      : analysis.zone === "HIGH ZONE"
+        ? "red"
+        : "blue";
+
+  const trendType =
+    analysis.trend === "DOWNTREND"
+      ? "red"
+      : analysis.trend === "SIDEWAYS"
+        ? "blue"
+        : "green";
+
+  const volatilityType =
+    analysis.volatility === "EXTREME VOLATILITY"
+      ? "red"
+      : analysis.volatility === "HIGH VOLATILITY"
+        ? "yellow"
+        : analysis.volatility === "MODERATE VOLATILITY"
+          ? "blue"
+          : "green";
+
+  const signalType =
+    analysis.signal === "GOOD BUY WINDOW"
+      ? "green"
+      : analysis.signal === "WATCH MARKET"
+        ? "blue"
+        : analysis.signal === "PRICES ELEVATED"
+          ? "yellow"
+          : "red";
+
+  return [
+    { text: analysis.zone, type: zoneType },
+    { text: analysis.volatility, type: volatilityType },
+    { text: analysis.trend, type: trendType },
+    { text: analysis.signal, type: signalType }
+  ];
 }
 
 function calculateGoldScore(history, karat) {
-  if (!history || history.length < 7) return 50;
+  const analysisHistory = getAnalysisHistory(history);
+  if (!analysisHistory || analysisHistory.length < 2) return 50;
 
-  const prices = history.map(h => h[karat]);
-  const today = prices.at(-1);
-  const min = Math.min(...prices);
-  const max = Math.max(...prices);
+  const prices = analysisHistory
+    .map(h => getKaratValue(h, karat))
+    .filter(v => typeof v === "number" && Number.isFinite(v));
+  if (prices.length < 2) return 50;
 
-  const range = max - min || 1;
-  const position = (today - min) / range;
+  const currentPrice = prices.at(-1);
+  const minPrice = Math.min(...prices);
+  const maxPrice = Math.max(...prices);
 
-  const prev7 = prices.at(-7);
-  const weeklyChange = ((today - prev7) / prev7) * 100;
+  if (maxPrice === minPrice) return 50;
 
-  let score = 50;
+  const score =
+    ((currentPrice - minPrice) / (maxPrice - minPrice)) * 100;
 
-  // Position weight (40%)
-  score += (0.5 - position) * 40;
-
-  // Momentum weight (40%)
-  score += weeklyChange * 2;
-
-  // Volatility penalty (20%)
-  const volatility = (range / min) * 100;
-  score -= volatility * 1.5;
-
-  score = Math.max(0, Math.min(100, Math.round(score)));
-
-  return score;
+  return Math.max(0, Math.min(100, Math.round(score)));
 }
 
 function formatUpdatedTimestamp(value) {
@@ -1189,34 +1327,19 @@ function renderData(data, options = {}) {
   if (!data.history || data.history.length === 0) {
     insightEl.textContent = `Showing today's gold price for ${data.city}`;
   } else {
-    insightEl.textContent =
-      generateDailyInsight(data.city, data.history, "24K");
+    const analysis = getMarketAnalysis(data.history, currentKarat);
+    const quickSummary = generateMarketSummary(analysis);
+    insightEl.innerHTML =
+      `${quickSummary}<span class="insight-footnote">Based on the last 30 days of gold price trends.</span>`;
   }
   insightEl.classList.remove("hidden");
 
   const insightMeta = document.getElementById("insightMeta");
-  const badgeContainer = document.getElementById("insightBadges");
   const scoreEl = document.getElementById("goldScore");
 
-  if (insightMeta && badgeContainer && scoreEl) {
-    badgeContainer.innerHTML = "";
-
-    const insightText = insightEl.textContent;
-    const badges = generateInsightBadges(
-      data.history,
-      "24K",
-      insightText
-    );
-    const limitedBadges = badges.slice(0, 3);
-
-    limitedBadges.forEach(b => {
-      const span = document.createElement("span");
-      span.className = `badge ${b.type}`;
-      span.textContent = b.text;
-      badgeContainer.appendChild(span);
-    });
-
-    const score = calculateGoldScore(data.history, "24K");
+  if (insightMeta && scoreEl) {
+    const analysis = getMarketAnalysis(data.history, currentKarat);
+    const score = analysis.score;
     scoreEl.textContent = `Gold Score ${score}`;
     scoreEl.dataset.tooltip =
       "Gold Score reflects price position within recent range, momentum strength, and volatility. Higher score indicates relatively favorable market conditions based on recent trends.";
@@ -1233,21 +1356,55 @@ function renderData(data, options = {}) {
       scoreEl.dataset.tooltipBound = "1";
     }
 
-    const signalEl = document.getElementById("goldSignal");
-    if (signalEl) {
-      let signalText = "Neutral Market";
+    const summary = generateMarketSummary(analysis);
+    insightEl.innerHTML =
+      `${summary}<span class="insight-footnote">Based on the last 30 days of gold price trends.</span>`;
+
+    const insightText = insightEl.textContent;
+    const badges = generateInsightBadges(
+      data.history,
+      currentKarat,
+      insightText
+    );
+    const badgesContainer =
+      document.getElementById("insightBadges");
+
+    if (badgesContainer) {
+      badgesContainer.innerHTML = "";
+
+      badges.forEach(b => {
+        const el = document.createElement("span");
+        el.className = `badge ${b.type}`;
+        el.textContent = b.text;
+        badgesContainer.appendChild(el);
+      });
+    }
+
+    const signalEl =
+      document.getElementById("goldSignal");
+
+    if(signalEl){
       let signalClass = "neutral";
-
-      if (score < 40) {
-        signalText = "🟢 Good Buying Opportunity";
+      let signalText = analysis.signal;
+      if (analysis.signal === "GOOD BUY WINDOW") {
         signalClass = "good";
-      } else if (score > 70) {
-        signalText = "🔴 Prices Elevated";
+        signalText = "Good Buying Opportunity";
+      } else if (analysis.signal === "WATCH MARKET") {
+        signalClass = "neutral";
+        signalText = "Neutral Market";
+      } else if (
+        analysis.signal === "PRICES ELEVATED" ||
+        analysis.signal === "WAIT BEFORE BUYING"
+      ) {
         signalClass = "high";
+        signalText =
+          analysis.signal === "WAIT BEFORE BUYING"
+            ? "Wait Before Buying"
+            : "Prices Elevated";
       }
-
       signalEl.textContent = signalText;
-      signalEl.className = `gold-signal ${signalClass}`;
+      signalEl.className = "gold-signal " + signalClass;
+
     }
 
     insightMeta.classList.remove("hidden");
@@ -1369,7 +1526,8 @@ function ensureChartUnitLabel() {
 
 function renderCurrentChart() {
   if (!currentData?.history?.length) return;
-  renderChart(getScaledHistory(currentData.history, currentKarat));
+  const chartHistory = currentData.history.slice(-currentRange);
+  renderChart(getScaledHistory(chartHistory, currentKarat));
 }
 
 function renderChart(history) {
@@ -1381,7 +1539,7 @@ function renderChart(history) {
   const ctx = document.getElementById("historyChart").getContext("2d");
   const prices = history.map(h => h.price);
   const bounds = computeYAxisBounds(prices);
-  const labels = buildDateLabels(currentData.history);
+  const labels = buildDateLabels(history);
 
   if (!chart) {
     chart = new Chart(ctx, {
@@ -1504,7 +1662,7 @@ document.querySelectorAll(".karat-btn").forEach(btn => {
 
     currentKarat = btn.dataset.karat;
     if (currentData) {
-      renderCurrentChart();
+      renderData(currentData);
     }
   };
 });
@@ -1516,7 +1674,7 @@ document.querySelectorAll(".range-btn").forEach(btn => {
 
     btn.classList.add("active");
     currentRange = Number(btn.dataset.range);
-    fetchPrice({ smoothRange: true });
+    renderCurrentChart();
   };
 });
 
@@ -1957,4 +2115,12 @@ document.addEventListener("click", e => {
     feedbackPanel.classList.add("hidden");
   }
 });
+
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register("/service-worker.js")
+      .then(reg => console.log("Service Worker registered", reg))
+      .catch(err => console.log("Service Worker failed", err));
+  });
+}
 

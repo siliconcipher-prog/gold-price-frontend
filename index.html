@@ -22,6 +22,12 @@
   />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" content="#d4af37">
+  <link rel="icon" href="/icons/favicon.ico">
+  <link rel="icon" type="image/png" sizes="32x32" href="/icons/favicon-32x32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/icons/favicon-16x16.png">
+  <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
 
   <link rel="stylesheet" href="style.css" />
   <link
@@ -232,8 +238,10 @@
     <div id="insight" class="daily-insight hidden"></div>
 
     <div id="insightMeta" class="insight-meta hidden">
-      <div id="goldScore" class="gold-score"></div>
-      <div id="goldSignal" class="gold-signal"></div>
+      <div class="insight-summary">
+        <div id="goldScore" class="gold-score"></div>
+        <div id="goldSignal" class="gold-signal"></div>
+      </div>
       <div id="insightBadges" class="insight-badges"></div>
     </div>
   </div>
@@ -531,5 +539,3 @@
 <script src="app.js?v=20260211"></script>
 </body>
 </html>
-
-
