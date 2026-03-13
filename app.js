@@ -8,7 +8,8 @@ let citiesList = null;
 let slabsLastUpdated = "";
 
 let chart;
-let portfolioValueChart;
+let portfolioTypeChart;
+let portfolioPurityChart;
 let currentKarat = "24K";
 let currentWeight = 1;
 let currentRange = 7;
@@ -36,8 +37,41 @@ const PORTFOLIO_TYPE_META = {
   chain: { icon: "📿", label: "Chain" },
   bangle: { icon: "⭕", label: "Bangle" },
   bar: { icon: "🟨", label: "Bar" },
-  other: { icon: "•", label: "Other" }
+  biscuit: { icon: "▭", label: "Biscuit" },
+  necklace: { icon: "📿", label: "Necklace" },
+  earring: { icon: "✦", label: "Earring" },
+  pendant: { icon: "🜂", label: "Pendant" },
+  bracelet: { icon: "⛓", label: "Bracelet" },
+  digital: { icon: "▣", label: "Digital" },
+  other: { icon: "◦", label: "Other" }
 };
+const portfolioCenterTextPlugin = {
+  id: "portfolioCenterText",
+  afterDraw(chart) {
+    const centerText = chart?.options?.plugins?.centerText;
+    if (!centerText?.value) return;
+
+    const { ctx } = chart;
+    const meta = chart.getDatasetMeta(0);
+    if (!meta?.data?.length) return;
+
+    const x = meta.data[0].x;
+    const y = meta.data[0].y;
+
+    ctx.save();
+    ctx.textAlign = "center";
+    ctx.fillStyle = "#94a3b8";
+    ctx.font = "500 12px ui-sans-serif, system-ui, sans-serif";
+    ctx.fillText(centerText.label || "Total", x, y - 6);
+    ctx.fillStyle = "#ffffff";
+    ctx.font = "700 18px ui-sans-serif, system-ui, sans-serif";
+    ctx.fillText(centerText.value, x, y + 14);
+    ctx.restore();
+  }
+};
+if (typeof Chart !== "undefined" && Chart.registry && !Chart.registry.plugins.get("portfolioCenterText")) {
+  Chart.register(portfolioCenterTextPlugin);
+}
 
 /* =========================
    DAILY INSIGHT COPY
@@ -333,6 +367,14 @@ function formatRupee(value) {
     minimumFractionDigits: 0,
     maximumFractionDigits: 2
   })}`;
+}
+
+function formatWeight(value) {
+  const num = Number(value || 0);
+  return `${num.toLocaleString("en-IN", {
+    minimumFractionDigits: num % 1 ? 2 : 0,
+    maximumFractionDigits: 2
+  })}g`;
 }
 
 function toPaise(value) {
@@ -859,37 +901,47 @@ function ensurePortfolioSection() {
       </div>
     </div>
 
-    <div id="portfolioValueChartWrap" class="portfolio-chart hidden">
-      <canvas id="portfolioValueChart"></canvas>
+    <div id="portfolioAnalytics" class="portfolio-analytics hidden">
+      <div class="chart-card chart-card-wide">
+        <h3>Invested vs Current Value</h3>
+        <div class="value-row">
+          <span>Invested</span>
+          <strong id="investedValue">₹0</strong>
+          <div class="bar">
+            <div id="investedBar"></div>
+          </div>
+        </div>
+        <div class="value-row">
+          <span>Current Value</span>
+          <strong id="currentValue">₹0</strong>
+          <div class="bar">
+            <div id="currentBar"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="chart-card">
+        <h3>Allocation by Item Type</h3>
+        <div class="chart-shell">
+          <div class="chart-canvas-wrap">
+            <canvas id="typeChart"></canvas>
+          </div>
+          <div id="typeLegend" class="chart-legend"></div>
+        </div>
+      </div>
+
+      <div class="chart-card">
+        <h3>Value by Purity</h3>
+        <div class="chart-shell">
+          <div class="chart-canvas-wrap">
+            <canvas id="purityChart"></canvas>
+          </div>
+          <div id="purityLegend" class="chart-legend"></div>
+        </div>
+      </div>
     </div>
 
-    <div id="portfolioBreakdown" class="portfolio-breakdown"></div>
     <div id="portfolioList" class="portfolio-list"></div>
-
-    <div id="portfolioAllocationWrap" class="portfolio-allocation hidden">
-      <h4>Gold Allocation</h4>
-      <div class="alloc-row">
-        <span>22K</span>
-        <div class="alloc-bar">
-          <div id="alloc22" class="alloc-fill"></div>
-        </div>
-        <span id="alloc22Percent">0%</span>
-      </div>
-      <div class="alloc-row">
-        <span>24K</span>
-        <div class="alloc-bar">
-          <div id="alloc24" class="alloc-fill"></div>
-        </div>
-        <span id="alloc24Percent">0%</span>
-      </div>
-      <div class="alloc-row">
-        <span>18K</span>
-        <div class="alloc-bar">
-          <div id="alloc18" class="alloc-fill"></div>
-        </div>
-        <span id="alloc18Percent">0%</span>
-      </div>
-    </div>
   `;
 
   if (pricingGuide && pricingGuide.parentNode) {
@@ -924,6 +976,12 @@ function ensurePortfolioModal() {
             <option value="chain">📿 Chain</option>
             <option value="bangle">⭕ Bangle</option>
             <option value="bar">🟨 Bar</option>
+            <option value="biscuit">▭ Biscuit</option>
+            <option value="necklace">📿 Necklace</option>
+            <option value="earring">✦ Earring</option>
+            <option value="pendant">🜂 Pendant</option>
+            <option value="bracelet">⛓ Bracelet</option>
+            <option value="digital">▣ Digital</option>
             <option value="other">Other</option>
           </select>
         </label>
@@ -949,8 +1007,9 @@ function ensurePortfolioModal() {
 
         <label>
           <span>Buy Price</span>
-          <input id="portfolioBuyPrice" type="number" min="0" step="0.01" placeholder="6200" required>
+          <input id="portfolioBuyPrice" type="text" inputmode="decimal" placeholder="6200" required>
         </label>
+        <p id="portfolioCurrentRateHint" class="portfolio-form-hint"></p>
 
         <p id="portfolioFormWarning" class="portfolio-form-warning hidden"></p>
 
@@ -983,7 +1042,7 @@ function ensureMainTabs() {
     tabs.innerHTML = `
       <button class="tab-btn active" data-tab="price" type="button">Price</button>
       <button class="tab-btn" data-tab="calculator" type="button">Calculator</button>
-      <button class="tab-btn" data-tab="portfolio" type="button">Portfolio</button>
+      <button class="tab-btn" data-tab="portfolio" type="button">Portfolio <span class="tab-beta">Beta</span></button>
     `;
     subtitle.insertAdjacentElement("afterend", tabs);
   }
@@ -1021,7 +1080,6 @@ function ensureMainTabs() {
     document.getElementById("monthlyStats")
   ];
   const calculatorSections = [
-    document.getElementById("estimateJump"),
     document.getElementById("estimator"),
     document.querySelector(".pricing-guide")
   ];
@@ -1819,72 +1877,150 @@ function generatePortfolioItemId() {
 }
 
 function destroyPortfolioCharts() {
-  if (portfolioValueChart) {
-    portfolioValueChart.destroy();
-    portfolioValueChart = null;
+  if (portfolioTypeChart) {
+    portfolioTypeChart.destroy();
+    portfolioTypeChart = null;
+  }
+
+  if (portfolioPurityChart) {
+    portfolioPurityChart.destroy();
+    portfolioPurityChart = null;
   }
 }
 
-function renderPortfolioCharts({ totalInvestment, totalCurrentValue, karatBreakdown, showCharts }) {
-  const valueWrap = document.getElementById("portfolioValueChartWrap");
-  const allocationWrap = document.getElementById("portfolioAllocationWrap");
-  const valueCanvas = document.getElementById("portfolioValueChart");
+function createChartLegend(containerId, items, valueFormatter) {
+  const legendEl = document.getElementById(containerId);
+  if (!legendEl) return;
 
-  if (!valueWrap || !allocationWrap || !valueCanvas) {
+  const total = items.reduce((sum, item) => sum + item.value, 0);
+  const visibleItems = items.filter(item => item.value > 0);
+
+  if (!visibleItems.length || total <= 0) {
+    legendEl.innerHTML = `<div class="chart-empty">No portfolio data</div>`;
+    return;
+  }
+
+  legendEl.innerHTML = visibleItems.map(item => {
+    const percent = Math.round((item.value / total) * 100);
+    return `
+      <div class="legend-item">
+        <span class="legend-dot" style="background:${item.color}"></span>
+        <div class="legend-copy">
+          <span class="legend-label">${item.label}</span>
+          <strong>${valueFormatter(item.value)}</strong>
+          <em>(${percent}%)</em>
+        </div>
+      </div>
+    `;
+  }).join("");
+}
+
+function renderPortfolioAnalyticsCharts(groupedTypes, purityValues, totalWeight, totalCurrentValue) {
+  const typeCanvas = document.getElementById("typeChart");
+  const purityCanvas = document.getElementById("purityChart");
+
+  if (!typeCanvas || !purityCanvas) {
     return;
   }
 
   destroyPortfolioCharts();
 
-  if (!showCharts) {
-    valueWrap.classList.add("hidden");
-    allocationWrap.classList.add("hidden");
-    return;
-  }
+  const typeLegendItems = [
+    { label: "Coins", value: groupedTypes.coins, color: "#f4c430" },
+    { label: "Jewellery", value: groupedTypes.jewellery, color: "#d4af37" },
+    { label: "Bars", value: groupedTypes.bars, color: "#b9872f" },
+    { label: "Digital", value: groupedTypes.digital, color: "#9aa7bd" },
+    { label: "Other", value: groupedTypes.other, color: "#5f6b7a" }
+  ];
 
-  valueWrap.classList.remove("hidden");
-  allocationWrap.classList.remove("hidden");
+  const purityLegendItems = [
+    { label: "24K Gold", value: purityValues.value24K, color: "#f4c430" },
+    { label: "22K Gold", value: purityValues.value22K, color: "#d4af37" },
+    { label: "18K Gold", value: purityValues.value18K, color: "#b9872f" }
+  ];
 
-  portfolioValueChart = new Chart(valueCanvas.getContext("2d"), {
-    type: "bar",
+  createChartLegend("typeLegend", typeLegendItems, value => formatWeight(value));
+  createChartLegend("purityLegend", purityLegendItems, value => formatRupee(value));
+
+  portfolioTypeChart = new Chart(typeCanvas.getContext("2d"), {
+    type: "doughnut",
     data: {
-      labels: ["Investment", "Current Value"],
+      labels: typeLegendItems.map(item => item.label),
       datasets: [{
-        data: [totalInvestment, totalCurrentValue],
-        backgroundColor: ["rgba(148, 163, 184, 0.75)", "rgba(212, 175, 55, 0.8)"],
-        borderColor: ["rgba(148, 163, 184, 1)", "rgba(212, 175, 55, 1)"],
-        borderWidth: 1.2,
-        borderRadius: 12,
-        maxBarThickness: 68
+        data: typeLegendItems.map(item => item.value),
+        backgroundColor: typeLegendItems.map(item => item.color),
+        borderWidth: 0,
+        hoverOffset: 4
       }]
     },
     options: {
       responsive: true,
       maintainAspectRatio: false,
+      cutout: "65%",
       plugins: {
-        legend: { display: false },
-        tooltip: {
-          callbacks: {
-            label: context => formatRupee(context.parsed.y)
-          }
-        }
-      },
-      scales: {
-        x: {
-          ticks: { color: "#d1d5db" },
-          grid: { display: false }
+        legend: {
+          display: false
         },
-        y: {
-          ticks: {
-            color: "#9ca3af",
-            callback: value => formatRupee(value)
-          },
-          grid: { color: "rgba(255,255,255,0.08)" }
+        centerText: {
+          label: "Total",
+          value: formatWeight(totalWeight)
         }
       }
     }
   });
 
+  portfolioPurityChart = new Chart(purityCanvas.getContext("2d"), {
+    type: "doughnut",
+    data: {
+      labels: purityLegendItems.map(item => item.label),
+      datasets: [{
+        data: purityLegendItems.map(item => item.value),
+        backgroundColor: purityLegendItems.map(item => item.color),
+        borderWidth: 0,
+        hoverOffset: 4
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      cutout: "65%",
+      plugins: {
+        legend: {
+          display: false
+        },
+        centerText: {
+          label: "Total",
+          value: formatRupee(totalCurrentValue)
+        }
+      }
+    }
+  });
+}
+
+function renderPortfolioAnalytics({ totalInvestment, totalCurrentValue, groupedTypes, purityValues, totalWeight, showCharts }) {
+  const analyticsWrap = document.getElementById("portfolioAnalytics");
+  const investedValueEl = document.getElementById("investedValue");
+  const currentValueEl = document.getElementById("currentValue");
+  const investedBarEl = document.getElementById("investedBar");
+  const currentBarEl = document.getElementById("currentBar");
+
+  if (!analyticsWrap || !investedValueEl || !currentValueEl || !investedBarEl || !currentBarEl) {
+    return;
+  }
+
+  if (!showCharts) {
+    destroyPortfolioCharts();
+    analyticsWrap.classList.add("hidden");
+    return;
+  }
+
+  analyticsWrap.classList.remove("hidden");
+  investedValueEl.textContent = formatRupee(totalInvestment);
+  currentValueEl.textContent = formatRupee(totalCurrentValue);
+  const maxValue = Math.max(totalInvestment, totalCurrentValue, 1);
+  investedBarEl.style.width = `${(totalInvestment / maxValue) * 100}%`;
+  currentBarEl.style.width = `${(totalCurrentValue / maxValue) * 100}%`;
+  renderPortfolioAnalyticsCharts(groupedTypes, purityValues, totalWeight, totalCurrentValue);
 }
 
 function loadPortfolio() {
@@ -1994,15 +2130,7 @@ function renderPortfolio() {
   ensurePortfolioSection();
 
   const listEl = document.getElementById("portfolioList");
-  const breakdownEl = document.getElementById("portfolioBreakdown");
-  const valueChartWrap = document.getElementById("portfolioValueChartWrap");
-  const allocationWrap = document.getElementById("portfolioAllocationWrap");
-  const alloc22El = document.getElementById("alloc22");
-  const alloc24El = document.getElementById("alloc24");
-  const alloc18El = document.getElementById("alloc18");
-  const alloc22PercentEl = document.getElementById("alloc22Percent");
-  const alloc24PercentEl = document.getElementById("alloc24Percent");
-  const alloc18PercentEl = document.getElementById("alloc18Percent");
+  const analyticsWrap = document.getElementById("portfolioAnalytics");
   const totalWeightEl = document.getElementById("portfolioTotalWeight");
   const totalInvestmentEl = document.getElementById("portfolioTotalInvestment");
   const currentValueEl = document.getElementById("portfolioCurrentValue");
@@ -2011,9 +2139,7 @@ function renderPortfolio() {
   const todayChangeEl = document.getElementById("portfolioTodayChange");
 
   if (
-    !listEl || !breakdownEl || !valueChartWrap || !allocationWrap ||
-    !alloc22El || !alloc24El || !alloc18El ||
-    !alloc22PercentEl || !alloc24PercentEl || !alloc18PercentEl ||
+    !listEl || !analyticsWrap ||
     !totalWeightEl || !totalInvestmentEl || !currentValueEl ||
     !totalProfitEl || !totalProfitPercentEl || !todayChangeEl
   ) {
@@ -2023,9 +2149,7 @@ function renderPortfolio() {
   const items = loadPortfolio();
   if (!items.length) {
     destroyPortfolioCharts();
-    valueChartWrap.classList.add("hidden");
-    allocationWrap.classList.add("hidden");
-    breakdownEl.innerHTML = "";
+    analyticsWrap.classList.add("hidden");
     listEl.innerHTML = `
       <div class="portfolio-empty">
         <p>You haven't added any gold yet.</p>
@@ -2042,12 +2166,6 @@ function renderPortfolio() {
     totalProfitPercentEl.className = "";
     todayChangeEl.textContent = "";
     todayChangeEl.className = "portfolio-today-change hidden";
-    alloc22El.style.width = "0%";
-    alloc24El.style.width = "0%";
-    alloc18El.style.width = "0%";
-    alloc22PercentEl.textContent = "0%";
-    alloc24PercentEl.textContent = "0%";
-    alloc18PercentEl.textContent = "0%";
     return;
   }
 
@@ -2055,20 +2173,42 @@ function renderPortfolio() {
   let totalInvestment = 0;
   let totalCurrentValue = 0;
   const hasLivePrices = Boolean(currentPrices);
-  const karatBreakdown = {
-    "24K": 0,
-    "22K": 0,
-    "18K": 0
+  const purityValues = {
+    value24K: 0,
+    value22K: 0,
+    value18K: 0
+  };
+  const groupedTypes = {
+    coins: 0,
+    jewellery: 0,
+    bars: 0,
+    digital: 0,
+    other: 0
   };
 
   items.forEach(item => {
+    const normalizedType = normalizePortfolioType(item.type);
     totalWeight += Number(item.weight) || 0;
     totalInvestment += (Number(item.weight) || 0) * (Number(item.buyPrice) || 0);
-    if (Object.prototype.hasOwnProperty.call(karatBreakdown, item.karat)) {
-      karatBreakdown[item.karat] += Number(item.weight) || 0;
+
+    if (normalizedType === "coin") {
+      groupedTypes.coins += Number(item.weight) || 0;
+    } else if (["ring", "chain", "bangle", "necklace", "earring", "pendant", "bracelet"].includes(normalizedType)) {
+      groupedTypes.jewellery += Number(item.weight) || 0;
+    } else if (["bar", "biscuit"].includes(normalizedType)) {
+      groupedTypes.bars += Number(item.weight) || 0;
+    } else if (normalizedType === "digital") {
+      groupedTypes.digital += Number(item.weight) || 0;
+    } else {
+      groupedTypes.other += Number(item.weight) || 0;
     }
+
     if (typeof currentPrices?.[item.karat] === "number") {
-      totalCurrentValue += (Number(item.weight) || 0) * currentPrices[item.karat];
+      const currentValue = (Number(item.weight) || 0) * currentPrices[item.karat];
+      totalCurrentValue += currentValue;
+      if (item.karat === "24K") purityValues.value24K += currentValue;
+      if (item.karat === "22K") purityValues.value22K += currentValue;
+      if (item.karat === "18K") purityValues.value18K += currentValue;
     }
   });
 
@@ -2078,9 +2218,6 @@ function renderPortfolio() {
   let todayChange = 0;
   const history = Array.isArray(currentData?.history) ? currentData.history : [];
   const hasTodayChange = history.length >= 2;
-  const percent22 = totalWeight > 0 ? (karatBreakdown["22K"] / totalWeight) * 100 : 0;
-  const percent24 = totalWeight > 0 ? (karatBreakdown["24K"] / totalWeight) * 100 : 0;
-  const percent18 = totalWeight > 0 ? (karatBreakdown["18K"] / totalWeight) * 100 : 0;
   const profitClass =
     !hasLivePrices ? "" : totalProfit > 0 ? "up" : totalProfit < 0 ? "down" : "";
 
@@ -2118,24 +2255,14 @@ function renderPortfolio() {
     todayChangeEl.className = "portfolio-today-change hidden";
   }
 
-  alloc22El.style.width = `${percent22}%`;
-  alloc24El.style.width = `${percent24}%`;
-  alloc18El.style.width = `${percent18}%`;
-  alloc22PercentEl.textContent = `${Math.round(percent22)}%`;
-  alloc24PercentEl.textContent = `${Math.round(percent24)}%`;
-  alloc18PercentEl.textContent = `${Math.round(percent18)}%`;
-
-  breakdownEl.innerHTML = `
-    <div class="portfolio-breakdown-card">22K -> ${karatBreakdown["22K"].toLocaleString("en-IN", { maximumFractionDigits: 2 })}g</div>
-    <div class="portfolio-breakdown-card">24K -> ${karatBreakdown["24K"].toLocaleString("en-IN", { maximumFractionDigits: 2 })}g</div>
-    <div class="portfolio-breakdown-card">18K -> ${karatBreakdown["18K"].toLocaleString("en-IN", { maximumFractionDigits: 2 })}g</div>
-  `;
   listEl.innerHTML = items.map(getPortfolioMarkup).join("");
 
-  renderPortfolioCharts({
+  renderPortfolioAnalytics({
     totalInvestment,
     totalCurrentValue,
-    karatBreakdown,
+    groupedTypes,
+    purityValues,
+    totalWeight,
     showCharts: hasLivePrices
   });
 }
@@ -2158,19 +2285,47 @@ function deletePortfolioItem(id) {
 
 function openPortfolioModal() {
   document.getElementById("portfolioModal")?.classList.remove("hidden");
+  updatePortfolioRateHint();
+  updatePortfolioBuyRateWarning();
 }
 
 function closePortfolioModal() {
   document.getElementById("portfolioModal")?.classList.add("hidden");
 }
 
+function parsePortfolioNumberInput(value) {
+  const normalized = String(value ?? "").replace(/,/g, "").trim();
+  if (!normalized) return NaN;
+  return Number(normalized);
+}
+
+function updatePortfolioRateHint() {
+  const hintEl = document.getElementById("portfolioCurrentRateHint");
+  const karat = document.getElementById("portfolioKarat")?.value;
+  const weight = Number(document.getElementById("portfolioWeight")?.value);
+  const currentPrice = karat ? currentPrices?.[karat] : null;
+
+  if (!hintEl) return;
+
+  if (typeof currentPrice === "number") {
+    const parts = [`Live ${karat} rate: ${formatRupee(currentPrice)}/g`];
+    if (Number.isFinite(weight) && weight > 0) {
+      parts.push(`Current value for ${formatWeight(weight)}: ${formatRupee(weight * currentPrice)}`);
+    }
+    hintEl.textContent = parts.join(" • ");
+    return;
+  }
+
+  hintEl.textContent = "";
+}
+
 function updatePortfolioBuyRateWarning() {
   const warningEl = document.getElementById("portfolioFormWarning");
   const karat = document.getElementById("portfolioKarat")?.value;
-  const buyPrice = Number(document.getElementById("portfolioBuyPrice")?.value);
+  const buyPrice = parsePortfolioNumberInput(document.getElementById("portfolioBuyPrice")?.value);
   const currentPrice = karat ? currentPrices?.[karat] : null;
 
-  if (!warningEl) return false;
+  if (!warningEl) return;
 
   if (
     typeof currentPrice === "number" &&
@@ -2180,12 +2335,11 @@ function updatePortfolioBuyRateWarning() {
     warningEl.textContent =
       "Buy Rate looks unusually high compared to the current live rate. Please check the value before saving.";
     warningEl.classList.remove("hidden");
-    return true;
+    return;
   }
 
   warningEl.textContent = "";
   warningEl.classList.add("hidden");
-  return false;
 }
 
 function bindPortfolioUi() {
@@ -2202,7 +2356,12 @@ function bindPortfolioUi() {
   document.getElementById("cancelPortfolioModal")
     ?.addEventListener("click", closePortfolioModal);
   document.getElementById("portfolioKarat")
-    ?.addEventListener("change", updatePortfolioBuyRateWarning);
+    ?.addEventListener("change", () => {
+      updatePortfolioRateHint();
+      updatePortfolioBuyRateWarning();
+    });
+  document.getElementById("portfolioWeight")
+    ?.addEventListener("input", updatePortfolioRateHint);
   document.getElementById("portfolioBuyPrice")
     ?.addEventListener("input", updatePortfolioBuyRateWarning);
 
@@ -2214,14 +2373,10 @@ function bindPortfolioUi() {
       const name = document.getElementById("portfolioName")?.value.trim();
       const weight = Number(document.getElementById("portfolioWeight")?.value);
       const karat = document.getElementById("portfolioKarat")?.value;
-      const buyPrice = Number(document.getElementById("portfolioBuyPrice")?.value);
+      const buyPrice = parsePortfolioNumberInput(document.getElementById("portfolioBuyPrice")?.value);
       const buyDate = document.getElementById("portfolioBuyDate")?.value;
 
-      if (!type || !weight || weight <= 0 || !karat || !buyPrice || buyPrice <= 0 || !buyDate) {
-        return;
-      }
-
-      if (updatePortfolioBuyRateWarning()) {
+      if (!type || !weight || weight <= 0 || !karat || !Number.isFinite(buyPrice) || buyPrice <= 0 || !buyDate) {
         return;
       }
 
@@ -2240,6 +2395,8 @@ function bindPortfolioUi() {
       if (typeField) typeField.value = "ring";
       const karatField = document.getElementById("portfolioKarat");
       if (karatField) karatField.value = "22K";
+      updatePortfolioRateHint();
+      updatePortfolioBuyRateWarning();
       closePortfolioModal();
     });
 

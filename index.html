@@ -29,7 +29,7 @@
   <link rel="icon" type="image/png" sizes="16x16" href="/icons/favicon-16x16.png">
   <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
 
-  <link rel="stylesheet" href="style.css?v=20260325" />
+  <link rel="stylesheet" href="style.css?v=20260333" />
   <link
     rel="preload"
     href="https://rxdmyncafckkpmizpcgu.supabase.co/storage/v1/object/public/data/slabs.json"
@@ -166,7 +166,7 @@
   <div class="main-tabs">
     <button class="tab-btn active" data-tab="price" type="button">Price</button>
     <button class="tab-btn" data-tab="calculator" type="button">Calculator</button>
-    <button class="tab-btn" data-tab="portfolio" type="button">Portfolio</button>
+    <button class="tab-btn" data-tab="portfolio" type="button">Portfolio <span class="tab-beta">Beta</span></button>
   </div>
 
   <!-- âœ… SEO CONTENT (ALWAYS VISIBLE) -->
@@ -292,10 +292,6 @@
   </div>
 
   <div id="tab-calculator" class="tab-content">
-  <button class="estimate-cta" id="estimateJump">
-    💍 Estimate Jewellery Price
-  </button>
-
   <section id="estimator" class="estimator">
 
     <h3>Jewellery Estimator</h3>
@@ -504,39 +500,47 @@
       </div>
     </div>
 
-    <div id="portfolioValueChartWrap" class="portfolio-chart hidden">
-      <canvas id="portfolioValueChart"></canvas>
+    <div id="portfolioAnalytics" class="portfolio-analytics hidden">
+      <div class="chart-card chart-card-wide">
+        <h3>Invested vs Current Value</h3>
+        <div class="value-row">
+          <span>Invested</span>
+          <strong id="investedValue"></strong>
+          <div class="bar">
+            <div id="investedBar"></div>
+          </div>
+        </div>
+        <div class="value-row">
+          <span>Current Value</span>
+          <strong id="currentValue"></strong>
+          <div class="bar">
+            <div id="currentBar"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="chart-card">
+        <h3>Allocation by Item Type</h3>
+        <div class="chart-shell">
+          <div class="chart-canvas-wrap">
+            <canvas id="typeChart"></canvas>
+          </div>
+          <div id="typeLegend" class="chart-legend"></div>
+        </div>
+      </div>
+
+      <div class="chart-card">
+        <h3>Value by Purity</h3>
+        <div class="chart-shell">
+          <div class="chart-canvas-wrap">
+            <canvas id="purityChart"></canvas>
+          </div>
+          <div id="purityLegend" class="chart-legend"></div>
+        </div>
+      </div>
     </div>
 
-    <div id="portfolioBreakdown" class="portfolio-breakdown"></div>
     <div id="portfolioList" class="portfolio-list"></div>
-
-    <div id="portfolioAllocationWrap" class="portfolio-allocation hidden">
-      <h4>Gold Allocation</h4>
-      <div class="alloc-row">
-        <span>22K</span>
-        <div class="alloc-bar">
-          <div id="alloc22" class="alloc-fill"></div>
-        </div>
-        <span id="alloc22Percent">0%</span>
-      </div>
-
-      <div class="alloc-row">
-        <span>24K</span>
-        <div class="alloc-bar">
-          <div id="alloc24" class="alloc-fill"></div>
-        </div>
-        <span id="alloc24Percent">0%</span>
-      </div>
-
-      <div class="alloc-row">
-        <span>18K</span>
-        <div class="alloc-bar">
-          <div id="alloc18" class="alloc-fill"></div>
-        </div>
-        <span id="alloc18Percent">0%</span>
-      </div>
-    </div>
   </section>
   </div>
 
@@ -644,17 +648,23 @@
     </div>
 
     <form id="portfolioForm" class="portfolio-form">
-      <label>
-        <span>Item Type</span>
-        <select id="portfolioType" required>
-          <option value="ring">💍 Ring</option>
-          <option value="coin">🪙 Coin</option>
+        <label>
+          <span>Item Type</span>
+          <select id="portfolioType" required>
+            <option value="ring">💍 Ring</option>
+            <option value="coin">🪙 Coin</option>
           <option value="chain">📿 Chain</option>
           <option value="bangle">⭕ Bangle</option>
           <option value="bar">🟨 Bar</option>
-          <option value="other">Other</option>
-        </select>
-      </label>
+            <option value="biscuit">▭ Biscuit</option>
+            <option value="necklace">📿 Necklace</option>
+            <option value="earring">✦ Earring</option>
+            <option value="pendant">🜂 Pendant</option>
+            <option value="bracelet">⛓ Bracelet</option>
+            <option value="digital">▣ Digital</option>
+            <option value="other">Other</option>
+          </select>
+        </label>
 
       <label>
         <span>Name</span>
@@ -675,10 +685,11 @@
         </select>
       </label>
 
-      <label>
-        <span>Buy Price</span>
-        <input id="portfolioBuyPrice" type="number" min="0" step="0.01" placeholder="6200" required>
-      </label>
+        <label>
+          <span>Buy Price</span>
+          <input id="portfolioBuyPrice" type="text" inputmode="decimal" placeholder="6200" required>
+        </label>
+        <p id="portfolioCurrentRateHint" class="portfolio-form-hint"></p>
 
       <p id="portfolioFormWarning" class="portfolio-form-warning hidden"></p>
 
@@ -695,6 +706,6 @@
   </div>
 </div>
 
-<script src="app.js?v=20260325"></script>
+<script src="app.js?v=20260333"></script>
 </body>
 </html>
