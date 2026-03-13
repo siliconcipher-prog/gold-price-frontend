@@ -9,7 +9,6 @@ let slabsLastUpdated = "";
 
 let chart;
 let portfolioValueChart;
-let portfolioAllocationChart;
 let currentKarat = "24K";
 let currentWeight = 1;
 let currentRange = 7;
@@ -828,22 +827,27 @@ function ensurePortfolioSection() {
       <button id="openPortfolioModal" class="portfolio-add-btn" type="button">Add Gold Item</button>
     </div>
 
-    <div class="portfolio-summary">
-      <div class="portfolio-summary-card">
-        <span>Total Gold Weight</span>
-        <strong id="portfolioTotalWeight">-</strong>
+    <div class="portfolio-dashboard">
+      <div class="portfolio-main">
+        <span class="label">Portfolio Value</span>
+        <h2 id="portfolioCurrentValue">₹0</h2>
+        <div class="portfolio-profit">
+          <span id="portfolioProfitLoss">₹0</span>
+          <span id="portfolioProfitPercent">(0%)</span>
+        </div>
+        <div id="portfolioTodayChange" class="portfolio-today-change hidden"></div>
       </div>
-      <div class="portfolio-summary-card">
-        <span>Total Investment</span>
-        <strong id="portfolioTotalInvestment">-</strong>
-      </div>
-      <div class="portfolio-summary-card">
-        <span>Current Value</span>
-        <strong id="portfolioCurrentValue">-</strong>
-      </div>
-      <div class="portfolio-summary-card">
-        <span>Total Profit/Loss</span>
-        <strong id="portfolioProfitLoss">-</strong>
+
+      <div class="portfolio-secondary">
+        <div class="mini-card">
+          <span>Total Gold</span>
+          <strong id="portfolioTotalWeight">0 g</strong>
+        </div>
+
+        <div class="mini-card">
+          <span>Total Investment</span>
+          <strong id="portfolioTotalInvestment">₹0</strong>
+        </div>
       </div>
     </div>
 
@@ -856,7 +860,27 @@ function ensurePortfolioSection() {
 
     <div id="portfolioAllocationWrap" class="portfolio-allocation hidden">
       <h4>Gold Allocation</h4>
-      <canvas id="portfolioAllocationChart"></canvas>
+      <div class="alloc-row">
+        <span>22K</span>
+        <div class="alloc-bar">
+          <div id="alloc22" class="alloc-fill"></div>
+        </div>
+        <span id="alloc22Percent">0%</span>
+      </div>
+      <div class="alloc-row">
+        <span>24K</span>
+        <div class="alloc-bar">
+          <div id="alloc24" class="alloc-fill"></div>
+        </div>
+        <span id="alloc24Percent">0%</span>
+      </div>
+      <div class="alloc-row">
+        <span>18K</span>
+        <div class="alloc-bar">
+          <div id="alloc18" class="alloc-fill"></div>
+        </div>
+        <span id="alloc18Percent">0%</span>
+      </div>
     </div>
   `;
 
@@ -1845,20 +1869,14 @@ function destroyPortfolioCharts() {
     portfolioValueChart.destroy();
     portfolioValueChart = null;
   }
-
-  if (portfolioAllocationChart) {
-    portfolioAllocationChart.destroy();
-    portfolioAllocationChart = null;
-  }
 }
 
 function renderPortfolioCharts({ totalInvestment, totalCurrentValue, karatBreakdown, showCharts }) {
   const valueWrap = document.getElementById("portfolioValueChartWrap");
   const allocationWrap = document.getElementById("portfolioAllocationWrap");
   const valueCanvas = document.getElementById("portfolioValueChart");
-  const allocationCanvas = document.getElementById("portfolioAllocationChart");
 
-  if (!valueWrap || !allocationWrap || !valueCanvas || !allocationCanvas) {
+  if (!valueWrap || !allocationWrap || !valueCanvas) {
     return;
   }
 
@@ -1913,45 +1931,6 @@ function renderPortfolioCharts({ totalInvestment, totalCurrentValue, karatBreakd
     }
   });
 
-  portfolioAllocationChart = new Chart(allocationCanvas.getContext("2d"), {
-    type: "pie",
-    data: {
-      labels: ["22K", "24K", "18K"],
-      datasets: [{
-        data: [
-          karatBreakdown["22K"],
-          karatBreakdown["24K"],
-          karatBreakdown["18K"]
-        ],
-        backgroundColor: [
-          "rgba(245, 158, 11, 0.82)",
-          "rgba(212, 175, 55, 0.9)",
-          "rgba(96, 165, 250, 0.82)"
-        ],
-        borderColor: "rgba(15,17,21,0.95)",
-        borderWidth: 2
-      }]
-    },
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      plugins: {
-        legend: {
-          position: "bottom",
-          labels: {
-            color: "#d1d5db",
-            boxWidth: 12,
-            padding: 16
-          }
-        },
-        tooltip: {
-          callbacks: {
-            label: context => `${context.label}: ${context.parsed.toLocaleString("en-IN", { maximumFractionDigits: 2 })}g`
-          }
-        }
-      }
-    }
-  });
 }
 
 function loadPortfolio() {
@@ -2006,29 +1985,31 @@ function getPortfolioMarkup(item) {
         <button class="portfolio-delete-btn" type="button" data-id="${item.id}">Delete</button>
       </div>
       <div class="portfolio-card-grid">
-        <div>
+        <div class="portfolio-stat">
           <span>Buy Rate</span>
           <strong>${formatRupee(item.buyPrice)}/g</strong>
         </div>
-        <div>
+        <div class="portfolio-stat">
           <span>Current Rate</span>
           <strong>${typeof currentPrice === "number" ? `${formatRupee(currentPrice)}/g` : "-"}</strong>
         </div>
-        <div>
+        <div class="portfolio-stat">
           <span>Investment</span>
           <strong>${formatRupee(invested)}</strong>
         </div>
-        <div>
+        <div class="portfolio-stat">
           <span>Current value</span>
           <strong>${typeof currentValue === "number" ? formatRupee(currentValue) : "-"}</strong>
         </div>
-        <div class="portfolio-profit ${profitClass}">
-          <span>Profit/Loss</span>
-          <strong>${profitText}</strong>
-        </div>
-        <div>
+      </div>
+      <div class="portfolio-card-footer">
+        <div class="portfolio-card-date">
           <span>Buy date</span>
           <strong>${item.buyDate || "-"}</strong>
+        </div>
+        <div class="portfolio-card-profit ${profitClass}">
+          <span>Profit/Loss</span>
+          <strong>${profitText}</strong>
         </div>
       </div>
     </article>
@@ -2042,12 +2023,26 @@ function renderPortfolio() {
   const breakdownEl = document.getElementById("portfolioBreakdown");
   const valueChartWrap = document.getElementById("portfolioValueChartWrap");
   const allocationWrap = document.getElementById("portfolioAllocationWrap");
+  const alloc22El = document.getElementById("alloc22");
+  const alloc24El = document.getElementById("alloc24");
+  const alloc18El = document.getElementById("alloc18");
+  const alloc22PercentEl = document.getElementById("alloc22Percent");
+  const alloc24PercentEl = document.getElementById("alloc24Percent");
+  const alloc18PercentEl = document.getElementById("alloc18Percent");
   const totalWeightEl = document.getElementById("portfolioTotalWeight");
   const totalInvestmentEl = document.getElementById("portfolioTotalInvestment");
   const currentValueEl = document.getElementById("portfolioCurrentValue");
   const totalProfitEl = document.getElementById("portfolioProfitLoss");
+  const totalProfitPercentEl = document.getElementById("portfolioProfitPercent");
+  const todayChangeEl = document.getElementById("portfolioTodayChange");
 
-  if (!listEl || !breakdownEl || !valueChartWrap || !allocationWrap || !totalWeightEl || !totalInvestmentEl || !currentValueEl || !totalProfitEl) {
+  if (
+    !listEl || !breakdownEl || !valueChartWrap || !allocationWrap ||
+    !alloc22El || !alloc24El || !alloc18El ||
+    !alloc22PercentEl || !alloc24PercentEl || !alloc18PercentEl ||
+    !totalWeightEl || !totalInvestmentEl || !currentValueEl ||
+    !totalProfitEl || !totalProfitPercentEl || !todayChangeEl
+  ) {
     return;
   }
 
@@ -2068,7 +2063,17 @@ function renderPortfolio() {
     totalInvestmentEl.textContent = "-";
     currentValueEl.textContent = "-";
     totalProfitEl.textContent = "-";
+    totalProfitPercentEl.textContent = "";
     totalProfitEl.className = "";
+    totalProfitPercentEl.className = "";
+    todayChangeEl.textContent = "";
+    todayChangeEl.className = "portfolio-today-change hidden";
+    alloc22El.style.width = "0%";
+    alloc24El.style.width = "0%";
+    alloc18El.style.width = "0%";
+    alloc22PercentEl.textContent = "0%";
+    alloc24PercentEl.textContent = "0%";
+    alloc18PercentEl.textContent = "0%";
     return;
   }
 
@@ -2096,6 +2101,27 @@ function renderPortfolio() {
   const totalProfit = totalCurrentValue - totalInvestment;
   const totalProfitPercent =
     totalInvestment > 0 ? (totalProfit / totalInvestment) * 100 : 0;
+  let todayChange = 0;
+  const history = Array.isArray(currentData?.history) ? currentData.history : [];
+  const hasTodayChange = history.length >= 2;
+  const percent22 = totalWeight > 0 ? (karatBreakdown["22K"] / totalWeight) * 100 : 0;
+  const percent24 = totalWeight > 0 ? (karatBreakdown["24K"] / totalWeight) * 100 : 0;
+  const percent18 = totalWeight > 0 ? (karatBreakdown["18K"] / totalWeight) * 100 : 0;
+  const profitClass =
+    !hasLivePrices ? "" : totalProfit > 0 ? "up" : totalProfit < 0 ? "down" : "";
+
+  if (hasTodayChange) {
+    const todayRow = history[history.length - 1];
+    const yesterdayRow = history[history.length - 2];
+    items.forEach(item => {
+      const weight = Number(item.weight) || 0;
+      const todayPrice = Number(todayRow?.[item.karat]);
+      const yesterdayPrice = Number(yesterdayRow?.[item.karat]);
+      if (Number.isFinite(todayPrice) && Number.isFinite(yesterdayPrice)) {
+        todayChange += (todayPrice - yesterdayPrice) * weight;
+      }
+    });
+  }
 
   totalWeightEl.textContent = `${totalWeight.toLocaleString("en-IN", {
     minimumFractionDigits: totalWeight % 1 ? 2 : 0,
@@ -2103,11 +2129,27 @@ function renderPortfolio() {
   })} g`;
   totalInvestmentEl.textContent = formatRupee(totalInvestment);
   currentValueEl.textContent = hasLivePrices ? formatRupee(totalCurrentValue) : "-";
-  totalProfitEl.textContent = hasLivePrices
-    ? `${formatRupee(totalProfit)} (${Math.round(totalProfitPercent)}%)`
-    : "-";
-  totalProfitEl.className =
-    !hasLivePrices ? "" : totalProfit > 0 ? "up" : totalProfit < 0 ? "down" : "";
+  totalProfitEl.textContent = hasLivePrices ? formatRupee(totalProfit) : "-";
+  totalProfitPercentEl.textContent = hasLivePrices ? `(${Math.round(totalProfitPercent)}%)` : "";
+  totalProfitEl.className = profitClass;
+  totalProfitPercentEl.className = profitClass;
+
+  if (hasLivePrices && hasTodayChange) {
+    const todayClass = todayChange > 0 ? "positive" : todayChange < 0 ? "negative" : "";
+    const prefix = todayChange > 0 ? "+" : "";
+    todayChangeEl.textContent = `Today ${prefix}${formatRupee(todayChange)}`;
+    todayChangeEl.className = `portfolio-today-change${todayClass ? ` ${todayClass}` : ""}`;
+  } else {
+    todayChangeEl.textContent = "";
+    todayChangeEl.className = "portfolio-today-change hidden";
+  }
+
+  alloc22El.style.width = `${percent22}%`;
+  alloc24El.style.width = `${percent24}%`;
+  alloc18El.style.width = `${percent18}%`;
+  alloc22PercentEl.textContent = `${Math.round(percent22)}%`;
+  alloc24PercentEl.textContent = `${Math.round(percent24)}%`;
+  alloc18PercentEl.textContent = `${Math.round(percent18)}%`;
 
   breakdownEl.innerHTML = `
     <div class="portfolio-breakdown-card">22K -> ${karatBreakdown["22K"].toLocaleString("en-IN", { maximumFractionDigits: 2 })}g</div>

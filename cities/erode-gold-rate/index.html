@@ -28,7 +28,7 @@
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
-  <link rel="stylesheet" href="/style.css?v=20260315" />
+  <link rel="stylesheet" href="/style.css?v=20260317" />
 
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
@@ -465,22 +465,27 @@
       <button id="openPortfolioModal" class="portfolio-add-btn" type="button">Add Gold Item</button>
     </div>
 
-    <div class="portfolio-summary">
-      <div class="portfolio-summary-card">
-        <span>Total Gold Weight</span>
-        <strong id="portfolioTotalWeight">-</strong>
+    <div class="portfolio-dashboard">
+      <div class="portfolio-main">
+        <span class="label">Portfolio Value</span>
+        <h2 id="portfolioCurrentValue">₹0</h2>
+        <div class="portfolio-profit">
+          <span id="portfolioProfitLoss">₹0</span>
+          <span id="portfolioProfitPercent">(0%)</span>
+        </div>
+        <div id="portfolioTodayChange" class="portfolio-today-change hidden"></div>
       </div>
-      <div class="portfolio-summary-card">
-        <span>Total Investment</span>
-        <strong id="portfolioTotalInvestment">-</strong>
-      </div>
-      <div class="portfolio-summary-card">
-        <span>Current Value</span>
-        <strong id="portfolioCurrentValue">-</strong>
-      </div>
-      <div class="portfolio-summary-card">
-        <span>Total Profit/Loss</span>
-        <strong id="portfolioProfitLoss">-</strong>
+
+      <div class="portfolio-secondary">
+        <div class="mini-card">
+          <span>Total Gold</span>
+          <strong id="portfolioTotalWeight">0 g</strong>
+        </div>
+
+        <div class="mini-card">
+          <span>Total Investment</span>
+          <strong id="portfolioTotalInvestment">₹0</strong>
+        </div>
       </div>
     </div>
 
@@ -493,7 +498,29 @@
 
     <div id="portfolioAllocationWrap" class="portfolio-allocation hidden">
       <h4>Gold Allocation</h4>
-      <canvas id="portfolioAllocationChart"></canvas>
+      <div class="alloc-row">
+        <span>22K</span>
+        <div class="alloc-bar">
+          <div id="alloc22" class="alloc-fill"></div>
+        </div>
+        <span id="alloc22Percent">0%</span>
+      </div>
+
+      <div class="alloc-row">
+        <span>24K</span>
+        <div class="alloc-bar">
+          <div id="alloc24" class="alloc-fill"></div>
+        </div>
+        <span id="alloc24Percent">0%</span>
+      </div>
+
+      <div class="alloc-row">
+        <span>18K</span>
+        <div class="alloc-bar">
+          <div id="alloc18" class="alloc-fill"></div>
+        </div>
+        <span id="alloc18Percent">0%</span>
+      </div>
     </div>
   </section>
   </div>
@@ -642,7 +669,7 @@
   </div>
 </div>
 
-<script src="/app.js?v=20260315"></script>
+<script src="/app.js?v=20260317"></script>
 
 </body>
 </html>

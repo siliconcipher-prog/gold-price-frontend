@@ -2790,7 +2790,7 @@ input[type=number]::-webkit-outer-spin-button {
 .portfolio-secondary-btn,
 .portfolio-close-btn,
 .portfolio-delete-btn{
-  padding:9px 14px;
+  padding:8px 14px;
   background:rgba(255,255,255,0.03);
   color:var(--text-main);
 }
@@ -2803,12 +2803,6 @@ input[type=number]::-webkit-outer-spin-button {
   transform:translateY(-1px);
 }
 
-.portfolio-summary{
-  display:grid;
-  grid-template-columns:repeat(2,minmax(0,1fr));
-  gap:12px;
-}
-
 .portfolio-breakdown{
   display:flex;
   flex-wrap:wrap;
@@ -2817,7 +2811,8 @@ input[type=number]::-webkit-outer-spin-button {
 }
 
 .portfolio-chart,
-.portfolio-allocation{
+.portfolio-allocation,
+.portfolio-dashboard{
   margin-top:20px;
   padding:16px;
   border-radius:16px;
@@ -2826,12 +2821,91 @@ input[type=number]::-webkit-outer-spin-button {
   box-shadow:var(--shadow-soft);
 }
 
+.portfolio-main{
+  text-align:center;
+  margin-bottom:20px;
+}
+
+.portfolio-main .label{
+  display:block;
+  color:var(--text-muted);
+  font-size:13px;
+}
+
+.portfolio-main h2{
+  font-size:32px;
+  margin:6px 0;
+}
+
+.portfolio-profit{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:8px;
+  font-weight:600;
+}
+
+.portfolio-today-change{
+  margin-top:8px;
+  font-size:14px;
+  font-weight:600;
+}
+
+.portfolio-profit #portfolioProfitLoss.up,
+.portfolio-profit #portfolioProfitPercent.up,
+#portfolioProfitLoss.up{
+  color:#22c55e;
+}
+
+.portfolio-profit #portfolioProfitLoss.down,
+.portfolio-profit #portfolioProfitPercent.down,
+#portfolioProfitLoss.down{
+  color:#ef4444;
+}
+
+.positive{
+  color:#16a34a;
+}
+
+.negative{
+  color:#ef4444;
+}
+
+.portfolio-secondary{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:12px;
+  margin-top:16px;
+}
+
+.mini-card{
+  padding:14px;
+  border-radius:12px;
+  background:rgba(255,255,255,0.03);
+  border:1px solid rgba(255,255,255,0.06);
+  text-align:center;
+}
+
+.mini-card span{
+  display:block;
+  font-size:12px;
+  color:var(--text-muted);
+  margin-bottom:6px;
+}
+
+.mini-card strong{
+  font-size:18px;
+  color:var(--text-main);
+}
+
 .portfolio-chart{
-  height:280px;
+  height:260px;
+  max-height:260px;
+  position:relative;
 }
 
 .portfolio-allocation{
-  min-height:320px;
+  margin-top:24px;
 }
 
 .portfolio-allocation h4{
@@ -2839,10 +2913,44 @@ input[type=number]::-webkit-outer-spin-button {
   font-size:16px;
 }
 
-.portfolio-chart canvas,
-.portfolio-allocation canvas{
+.portfolio-chart canvas{
   width:100% !important;
   height:100% !important;
+}
+
+.alloc-row{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  margin:8px 0;
+}
+
+.alloc-row > span:first-child{
+  width:34px;
+  color:var(--text-muted);
+  font-size:13px;
+}
+
+.alloc-row > span:last-child{
+  width:40px;
+  text-align:right;
+  color:var(--text-main);
+  font-size:13px;
+}
+
+.alloc-bar{
+  flex:1;
+  height:8px;
+  border-radius:999px;
+  background:rgba(255,255,255,0.08);
+  overflow:hidden;
+}
+
+.alloc-fill{
+  height:100%;
+  border-radius:999px;
+  background:#d4af37;
+  width:0;
 }
 
 .portfolio-breakdown-card{
@@ -2854,26 +2962,19 @@ input[type=number]::-webkit-outer-spin-button {
   color:var(--text-muted);
 }
 
-.portfolio-summary-card,
 .portfolio-card{
-  padding:16px;
-  border-radius:16px;
-  background:var(--card-bg);
-  border:1px solid var(--border-soft);
-  box-shadow:var(--shadow-soft);
+  padding:18px;
+  border-radius:20px;
+  background:linear-gradient(180deg, rgba(255,255,255,0.025), rgba(255,255,255,0.015));
+  border:1px solid rgba(255,255,255,0.08);
+  box-shadow:0 14px 30px rgba(0,0,0,0.18);
 }
 
-.portfolio-summary-card span,
 .portfolio-card-grid span{
   display:block;
   font-size:12px;
   color:var(--text-muted);
   margin-bottom:6px;
-}
-
-.portfolio-summary-card strong{
-  font-size:18px;
-  color:var(--text-main);
 }
 
 .portfolio-list{
@@ -2887,7 +2988,7 @@ input[type=number]::-webkit-outer-spin-button {
   align-items:flex-start;
   justify-content:space-between;
   gap:12px;
-  margin-bottom:14px;
+  margin-bottom:16px;
 }
 
 .portfolio-item-meta{
@@ -2896,7 +2997,7 @@ input[type=number]::-webkit-outer-spin-button {
 
 .portfolio-card-head h4{
   margin:0;
-  font-size:18px;
+  font-size:20px;
 }
 
 .portfolio-card-head p{
@@ -2911,9 +3012,56 @@ input[type=number]::-webkit-outer-spin-button {
   gap:12px;
 }
 
+.portfolio-stat{
+  padding:14px;
+  border-radius:14px;
+  background:rgba(255,255,255,0.025);
+  border:1px solid rgba(255,255,255,0.06);
+}
+
 .portfolio-card-grid strong{
   font-size:15px;
   color:var(--text-main);
+}
+
+.portfolio-card-footer{
+  display:flex;
+  align-items:flex-end;
+  justify-content:space-between;
+  gap:12px;
+  margin-top:14px;
+  padding-top:14px;
+  border-top:1px solid rgba(255,255,255,0.06);
+}
+
+.portfolio-card-date span,
+.portfolio-card-profit span{
+  display:block;
+  font-size:12px;
+  color:var(--text-muted);
+  margin-bottom:6px;
+}
+
+.portfolio-card-date strong{
+  font-size:15px;
+  color:var(--text-main);
+}
+
+.portfolio-card-profit{
+  text-align:right;
+}
+
+.portfolio-card-profit strong{
+  font-size:24px;
+  line-height:1;
+}
+
+.portfolio-card-profit.up strong{
+  color:#22c55e;
+}
+
+.portfolio-card-profit.down strong{
+  color:#ef4444;
 }
 
 .portfolio-empty{
@@ -2935,16 +3083,6 @@ input[type=number]::-webkit-outer-spin-button {
 
 .portfolio-empty-btn{
   margin-top:14px;
-}
-
-.portfolio-profit.up strong,
-#portfolioProfitLoss.up{
-  color:#22c55e;
-}
-
-.portfolio-profit.down strong,
-#portfolioProfitLoss.down{
-  color:#ef4444;
 }
 
 .portfolio-modal{
@@ -3031,9 +3169,18 @@ input[type=number]::-webkit-outer-spin-button {
     align-items:stretch;
   }
 
-  .portfolio-summary,
+  .portfolio-secondary,
   .portfolio-card-grid{
     grid-template-columns:1fr;
+  }
+
+  .portfolio-card-footer{
+    flex-direction:column;
+    align-items:flex-start;
+  }
+
+  .portfolio-card-profit{
+    text-align:left;
   }
 }
 
