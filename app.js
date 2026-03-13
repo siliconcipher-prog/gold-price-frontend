@@ -8,6 +8,8 @@ let citiesList = null;
 let slabsLastUpdated = "";
 
 let chart;
+let portfolioValueChart;
+let portfolioAllocationChart;
 let currentKarat = "24K";
 let currentWeight = 1;
 let currentRange = 7;
@@ -845,8 +847,17 @@ function ensurePortfolioSection() {
       </div>
     </div>
 
+    <div id="portfolioValueChartWrap" class="portfolio-chart hidden">
+      <canvas id="portfolioValueChart"></canvas>
+    </div>
+
     <div id="portfolioBreakdown" class="portfolio-breakdown"></div>
     <div id="portfolioList" class="portfolio-list"></div>
+
+    <div id="portfolioAllocationWrap" class="portfolio-allocation hidden">
+      <h4>Gold Allocation</h4>
+      <canvas id="portfolioAllocationChart"></canvas>
+    </div>
   `;
 
   if (pricingGuide && pricingGuide.parentNode) {
@@ -1829,6 +1840,120 @@ function generatePortfolioItemId() {
   return `portfolio-${Date.now()}-${Math.random().toString(16).slice(2)}`;
 }
 
+function destroyPortfolioCharts() {
+  if (portfolioValueChart) {
+    portfolioValueChart.destroy();
+    portfolioValueChart = null;
+  }
+
+  if (portfolioAllocationChart) {
+    portfolioAllocationChart.destroy();
+    portfolioAllocationChart = null;
+  }
+}
+
+function renderPortfolioCharts({ totalInvestment, totalCurrentValue, karatBreakdown, showCharts }) {
+  const valueWrap = document.getElementById("portfolioValueChartWrap");
+  const allocationWrap = document.getElementById("portfolioAllocationWrap");
+  const valueCanvas = document.getElementById("portfolioValueChart");
+  const allocationCanvas = document.getElementById("portfolioAllocationChart");
+
+  if (!valueWrap || !allocationWrap || !valueCanvas || !allocationCanvas) {
+    return;
+  }
+
+  destroyPortfolioCharts();
+
+  if (!showCharts) {
+    valueWrap.classList.add("hidden");
+    allocationWrap.classList.add("hidden");
+    return;
+  }
+
+  valueWrap.classList.remove("hidden");
+  allocationWrap.classList.remove("hidden");
+
+  portfolioValueChart = new Chart(valueCanvas.getContext("2d"), {
+    type: "bar",
+    data: {
+      labels: ["Investment", "Current Value"],
+      datasets: [{
+        data: [totalInvestment, totalCurrentValue],
+        backgroundColor: ["rgba(148, 163, 184, 0.75)", "rgba(212, 175, 55, 0.8)"],
+        borderColor: ["rgba(148, 163, 184, 1)", "rgba(212, 175, 55, 1)"],
+        borderWidth: 1.2,
+        borderRadius: 12,
+        maxBarThickness: 68
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            label: context => formatRupee(context.parsed.y)
+          }
+        }
+      },
+      scales: {
+        x: {
+          ticks: { color: "#d1d5db" },
+          grid: { display: false }
+        },
+        y: {
+          ticks: {
+            color: "#9ca3af",
+            callback: value => formatRupee(value)
+          },
+          grid: { color: "rgba(255,255,255,0.08)" }
+        }
+      }
+    }
+  });
+
+  portfolioAllocationChart = new Chart(allocationCanvas.getContext("2d"), {
+    type: "pie",
+    data: {
+      labels: ["22K", "24K", "18K"],
+      datasets: [{
+        data: [
+          karatBreakdown["22K"],
+          karatBreakdown["24K"],
+          karatBreakdown["18K"]
+        ],
+        backgroundColor: [
+          "rgba(245, 158, 11, 0.82)",
+          "rgba(212, 175, 55, 0.9)",
+          "rgba(96, 165, 250, 0.82)"
+        ],
+        borderColor: "rgba(15,17,21,0.95)",
+        borderWidth: 2
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          position: "bottom",
+          labels: {
+            color: "#d1d5db",
+            boxWidth: 12,
+            padding: 16
+          }
+        },
+        tooltip: {
+          callbacks: {
+            label: context => `${context.label}: ${context.parsed.toLocaleString("en-IN", { maximumFractionDigits: 2 })}g`
+          }
+        }
+      }
+    }
+  });
+}
+
 function loadPortfolio() {
   try {
     const raw = localStorage.getItem(PORTFOLIO_STORAGE_KEY);
@@ -1915,17 +2040,22 @@ function renderPortfolio() {
 
   const listEl = document.getElementById("portfolioList");
   const breakdownEl = document.getElementById("portfolioBreakdown");
+  const valueChartWrap = document.getElementById("portfolioValueChartWrap");
+  const allocationWrap = document.getElementById("portfolioAllocationWrap");
   const totalWeightEl = document.getElementById("portfolioTotalWeight");
   const totalInvestmentEl = document.getElementById("portfolioTotalInvestment");
   const currentValueEl = document.getElementById("portfolioCurrentValue");
   const totalProfitEl = document.getElementById("portfolioProfitLoss");
 
-  if (!listEl || !breakdownEl || !totalWeightEl || !totalInvestmentEl || !currentValueEl || !totalProfitEl) {
+  if (!listEl || !breakdownEl || !valueChartWrap || !allocationWrap || !totalWeightEl || !totalInvestmentEl || !currentValueEl || !totalProfitEl) {
     return;
   }
 
   const items = loadPortfolio();
   if (!items.length) {
+    destroyPortfolioCharts();
+    valueChartWrap.classList.add("hidden");
+    allocationWrap.classList.add("hidden");
     breakdownEl.innerHTML = "";
     listEl.innerHTML = `
       <div class="portfolio-empty">
@@ -1964,6 +2094,8 @@ function renderPortfolio() {
   });
 
   const totalProfit = totalCurrentValue - totalInvestment;
+  const totalProfitPercent =
+    totalInvestment > 0 ? (totalProfit / totalInvestment) * 100 : 0;
 
   totalWeightEl.textContent = `${totalWeight.toLocaleString("en-IN", {
     minimumFractionDigits: totalWeight % 1 ? 2 : 0,
@@ -1971,7 +2103,9 @@ function renderPortfolio() {
   })} g`;
   totalInvestmentEl.textContent = formatRupee(totalInvestment);
   currentValueEl.textContent = hasLivePrices ? formatRupee(totalCurrentValue) : "-";
-  totalProfitEl.textContent = hasLivePrices ? formatRupee(totalProfit) : "-";
+  totalProfitEl.textContent = hasLivePrices
+    ? `${formatRupee(totalProfit)} (${Math.round(totalProfitPercent)}%)`
+    : "-";
   totalProfitEl.className =
     !hasLivePrices ? "" : totalProfit > 0 ? "up" : totalProfit < 0 ? "down" : "";
 
@@ -1981,6 +2115,13 @@ function renderPortfolio() {
     <div class="portfolio-breakdown-card">18K -> ${karatBreakdown["18K"].toLocaleString("en-IN", { maximumFractionDigits: 2 })}g</div>
   `;
   listEl.innerHTML = items.map(getPortfolioMarkup).join("");
+
+  renderPortfolioCharts({
+    totalInvestment,
+    totalCurrentValue,
+    karatBreakdown,
+    showCharts: hasLivePrices
+  });
 }
 
 function addPortfolioItem(item) {

@@ -2816,6 +2816,35 @@ input[type=number]::-webkit-outer-spin-button {
   margin-top:14px;
 }
 
+.portfolio-chart,
+.portfolio-allocation{
+  margin-top:20px;
+  padding:16px;
+  border-radius:16px;
+  background:rgba(255,255,255,0.02);
+  border:1px solid rgba(255,255,255,0.06);
+  box-shadow:var(--shadow-soft);
+}
+
+.portfolio-chart{
+  height:280px;
+}
+
+.portfolio-allocation{
+  min-height:320px;
+}
+
+.portfolio-allocation h4{
+  margin:0 0 14px;
+  font-size:16px;
+}
+
+.portfolio-chart canvas,
+.portfolio-allocation canvas{
+  width:100% !important;
+  height:100% !important;
+}
+
 .portfolio-breakdown-card{
   padding:8px 12px;
   border-radius:999px;

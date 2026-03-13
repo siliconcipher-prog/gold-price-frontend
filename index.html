@@ -29,7 +29,7 @@
   <link rel="icon" type="image/png" sizes="16x16" href="/icons/favicon-16x16.png">
   <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
 
-  <link rel="stylesheet" href="style.css?v=20260314" />
+  <link rel="stylesheet" href="style.css?v=20260315" />
   <link
     rel="preload"
     href="https://rxdmyncafckkpmizpcgu.supabase.co/storage/v1/object/public/data/slabs.json"
@@ -507,8 +507,17 @@
       </div>
     </div>
 
+    <div id="portfolioValueChartWrap" class="portfolio-chart hidden">
+      <canvas id="portfolioValueChart"></canvas>
+    </div>
+
     <div id="portfolioBreakdown" class="portfolio-breakdown"></div>
     <div id="portfolioList" class="portfolio-list"></div>
+
+    <div id="portfolioAllocationWrap" class="portfolio-allocation hidden">
+      <h4>Gold Allocation</h4>
+      <canvas id="portfolioAllocationChart"></canvas>
+    </div>
   </section>
   </div>
 
@@ -655,6 +664,6 @@
   </div>
 </div>
 
-<script src="app.js?v=20260314"></script>
+<script src="app.js?v=20260315"></script>
 </body>
 </html>
