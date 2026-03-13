@@ -30,6 +30,14 @@ const priceAnimationFrames = new WeakMap();
 const estimatorAnimationFrames = new WeakMap();
 let weightToggleLockTimer = null;
 let isWeightToggleLocked = false;
+const PORTFOLIO_TYPE_META = {
+  ring: { icon: "💍", label: "Ring" },
+  coin: { icon: "🪙", label: "Coin" },
+  chain: { icon: "📿", label: "Chain" },
+  bangle: { icon: "⭕", label: "Bangle" },
+  bar: { icon: "🟨", label: "Bar" },
+  other: { icon: "•", label: "Other" }
+};
 
 /* =========================
    DAILY INSIGHT COPY
@@ -909,8 +917,20 @@ function ensurePortfolioModal() {
 
       <form id="portfolioForm" class="portfolio-form">
         <label>
+          <span>Item Type</span>
+          <select id="portfolioType" required>
+            <option value="ring">💍 Ring</option>
+            <option value="coin">🪙 Coin</option>
+            <option value="chain">📿 Chain</option>
+            <option value="bangle">⭕ Bangle</option>
+            <option value="bar">🟨 Bar</option>
+            <option value="other">Other</option>
+          </select>
+        </label>
+
+        <label>
           <span>Name</span>
-          <input id="portfolioName" type="text" placeholder="Wedding Ring" required>
+          <input id="portfolioName" type="text" placeholder="Optional name">
         </label>
 
         <label>
@@ -1875,13 +1895,14 @@ function loadPortfolio() {
       if (!legacy) return [];
       const parsedLegacy = JSON.parse(legacy);
       if (Array.isArray(parsedLegacy)) {
-        localStorage.setItem(PORTFOLIO_STORAGE_KEY, JSON.stringify(parsedLegacy));
-        return parsedLegacy;
+        const normalizedLegacy = parsedLegacy.map(normalizePortfolioItem);
+        localStorage.setItem(PORTFOLIO_STORAGE_KEY, JSON.stringify(normalizedLegacy));
+        return normalizedLegacy;
       }
       return [];
     }
     const parsed = JSON.parse(raw);
-    return Array.isArray(parsed) ? parsed : [];
+    return Array.isArray(parsed) ? parsed.map(normalizePortfolioItem) : [];
   } catch {
     return [];
   }
@@ -1891,7 +1912,25 @@ function savePortfolio(items) {
   localStorage.setItem(PORTFOLIO_STORAGE_KEY, JSON.stringify(items));
 }
 
+function normalizePortfolioType(type) {
+  const key = String(type || "other").toLowerCase();
+  return Object.prototype.hasOwnProperty.call(PORTFOLIO_TYPE_META, key)
+    ? key
+    : "other";
+}
+
+function normalizePortfolioItem(item) {
+  return {
+    ...item,
+    name: typeof item?.name === "string" ? item.name.trim() : "",
+    type: normalizePortfolioType(item?.type)
+  };
+}
+
 function getPortfolioMarkup(item) {
+  const normalizedItem = normalizePortfolioItem(item);
+  const typeMeta = PORTFOLIO_TYPE_META[normalizedItem.type];
+  const itemName = normalizedItem.name;
   const currentPrice = currentPrices?.[item.karat];
   const currentValue =
     typeof currentPrice === "number" ? item.weight * currentPrice : null;
@@ -1913,7 +1952,8 @@ function getPortfolioMarkup(item) {
     <article class="portfolio-card" data-id="${item.id}">
       <div class="portfolio-card-head">
         <div class="portfolio-item-meta">
-          <h4>${item.name}</h4>
+          <h4>${typeMeta.icon} ${typeMeta.label}</h4>
+          ${itemName ? `<p class="portfolio-item-name">${itemName}</p>` : ""}
           <p>${item.weight}g • ${item.karat}</p>
         </div>
         <button class="portfolio-delete-btn" type="button" data-id="${item.id}">Delete</button>
@@ -2170,13 +2210,14 @@ function bindPortfolioUi() {
     ?.addEventListener("submit", event => {
       event.preventDefault();
 
+      const type = document.getElementById("portfolioType")?.value;
       const name = document.getElementById("portfolioName")?.value.trim();
       const weight = Number(document.getElementById("portfolioWeight")?.value);
       const karat = document.getElementById("portfolioKarat")?.value;
       const buyPrice = Number(document.getElementById("portfolioBuyPrice")?.value);
       const buyDate = document.getElementById("portfolioBuyDate")?.value;
 
-      if (!name || !weight || weight <= 0 || !karat || !buyPrice || buyPrice <= 0 || !buyDate) {
+      if (!type || !weight || weight <= 0 || !karat || !buyPrice || buyPrice <= 0 || !buyDate) {
         return;
       }
 
@@ -2186,7 +2227,8 @@ function bindPortfolioUi() {
 
       addPortfolioItem({
         id: generatePortfolioItemId(),
-        name,
+        type: normalizePortfolioType(type),
+        name: name || "",
         weight,
         karat,
         buyPrice,
@@ -2194,6 +2236,8 @@ function bindPortfolioUi() {
       });
 
       event.target.reset();
+      const typeField = document.getElementById("portfolioType");
+      if (typeField) typeField.value = "ring";
       const karatField = document.getElementById("portfolioKarat");
       if (karatField) karatField.value = "22K";
       closePortfolioModal();

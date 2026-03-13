@@ -29,7 +29,7 @@
   <link rel="icon" type="image/png" sizes="16x16" href="/icons/favicon-16x16.png">
   <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
 
-  <link rel="stylesheet" href="style.css?v=20260323" />
+  <link rel="stylesheet" href="style.css?v=20260325" />
   <link
     rel="preload"
     href="https://rxdmyncafckkpmizpcgu.supabase.co/storage/v1/object/public/data/slabs.json"
@@ -645,8 +645,20 @@
 
     <form id="portfolioForm" class="portfolio-form">
       <label>
+        <span>Item Type</span>
+        <select id="portfolioType" required>
+          <option value="ring">💍 Ring</option>
+          <option value="coin">🪙 Coin</option>
+          <option value="chain">📿 Chain</option>
+          <option value="bangle">⭕ Bangle</option>
+          <option value="bar">🟨 Bar</option>
+          <option value="other">Other</option>
+        </select>
+      </label>
+
+      <label>
         <span>Name</span>
-        <input id="portfolioName" type="text" placeholder="Wedding Ring" required>
+        <input id="portfolioName" type="text" placeholder="Optional name">
       </label>
 
       <label>
@@ -683,6 +695,6 @@
   </div>
 </div>
 
-<script src="app.js?v=20260323"></script>
+<script src="app.js?v=20260325"></script>
 </body>
 </html>
