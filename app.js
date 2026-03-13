@@ -1356,35 +1356,33 @@ function generateMarketSummary(data) {
   const {
     today: currentPrice,
     yesterday: yesterdayPrice,
-    monthlyLow,
-    monthlyHigh
+    weeklyLow,
+    weeklyHigh
   } = data;
 
   const dailyChange = currentPrice - yesterdayPrice;
-  const monthlyRange = monthlyHigh - monthlyLow;
-  const rangePosition = monthlyRange > 0
-    ? (currentPrice - monthlyLow) / monthlyRange
-    : 0.5;
 
-  const isFlat = Math.abs(dailyChange) < 0.001;
-  const indicator = isFlat ? "➡" : dailyChange > 0 ? "⬆" : "⬇";
-  const movement = isFlat
-    ? "holds steady"
-    : dailyChange > 0
-      ? "rises"
-      : "falls";
+  if (currentPrice <= weeklyLow) {
+    return "🟢 Gold hits a 7-day low";
+  }
 
-  const context =
-    rangePosition < 0.25
-      ? "near monthly lows"
-      : rangePosition > 0.75
-        ? "near monthly highs"
-        : "near mid-range";
+  if (currentPrice >= weeklyHigh) {
+    return "🔴 Gold reaches a weekly high";
+  }
 
-  const headline = `${indicator} Gold ${movement} ${context}`;
-  return headline.length <= 60
-    ? headline
-    : "➡ Gold holds steady near mid-range";
+  if (Math.abs(dailyChange) < 0.001) {
+    return "⚪ Gold moves little today";
+  }
+
+  if (dailyChange > 0) {
+    return "🔴 Gold rises today";
+  }
+
+  if (dailyChange < 0) {
+    return "🟢 Gold falls today";
+  }
+
+  return "⚪ Gold moves little today";
 }
 
 function generateInsightBadges(history, karat, insightText) {
@@ -1627,87 +1625,9 @@ function renderData(data, options = {}) {
     insightEl.textContent = `Showing today's gold price for ${data.city}`;
   } else {
     const analysis = getMarketAnalysis(data.history, currentKarat);
-    const quickSummary = generateMarketSummary(analysis);
-    insightEl.innerHTML =
-      `${quickSummary}<span class="insight-footnote">Based on the last 30 days of gold price trends.</span>`;
+    insightEl.textContent = generateMarketSummary(analysis);
   }
   insightEl.classList.remove("hidden");
-
-  const insightMeta = document.getElementById("insightMeta");
-  const scoreEl = document.getElementById("goldScore");
-
-  if (insightMeta && scoreEl) {
-    const analysis = getMarketAnalysis(data.history, currentKarat);
-    const score = analysis.score;
-    scoreEl.textContent = `Gold Score ${score}`;
-    scoreEl.dataset.tooltip =
-      "Gold Score reflects price position within recent range, momentum strength, and volatility. Higher score indicates relatively favorable market conditions based on recent trends.";
-    scoreEl.tabIndex = 0;
-    scoreEl.setAttribute("aria-label", `Gold Score ${score} out of 100`);
-    if (!scoreEl.dataset.tooltipBound) {
-      scoreEl.addEventListener("click", () => {
-        if (document.activeElement === scoreEl) {
-          scoreEl.blur();
-        } else {
-          scoreEl.focus();
-        }
-      });
-      scoreEl.dataset.tooltipBound = "1";
-    }
-
-    const summary = generateMarketSummary(analysis);
-    insightEl.innerHTML =
-      `${summary}<span class="insight-footnote">Based on the last 30 days of gold price trends.</span>`;
-
-    const insightText = insightEl.textContent;
-    const badges = generateInsightBadges(
-      data.history,
-      currentKarat,
-      insightText
-    );
-    const badgesContainer =
-      document.getElementById("insightBadges");
-
-    if (badgesContainer) {
-      badgesContainer.innerHTML = "";
-
-      badges.forEach(b => {
-        const el = document.createElement("span");
-        el.className = `badge ${b.type}`;
-        el.textContent = b.text;
-        badgesContainer.appendChild(el);
-      });
-    }
-
-    const signalEl =
-      document.getElementById("goldSignal");
-
-    if(signalEl){
-      let signalClass = "neutral";
-      let signalText = analysis.signal;
-      if (analysis.signal === "GOOD BUY WINDOW") {
-        signalClass = "good";
-        signalText = "Good Buying Opportunity";
-      } else if (analysis.signal === "WATCH MARKET") {
-        signalClass = "neutral";
-        signalText = "Neutral Market";
-      } else if (
-        analysis.signal === "PRICES ELEVATED" ||
-        analysis.signal === "WAIT BEFORE BUYING"
-      ) {
-        signalClass = "high";
-        signalText =
-          analysis.signal === "WAIT BEFORE BUYING"
-            ? "Wait Before Buying"
-            : "Prices Elevated";
-      }
-      signalEl.textContent = signalText;
-      signalEl.className = "gold-signal " + signalClass;
-
-    }
-
-    insightMeta.classList.remove("hidden");
-  }
 
   PRICE_KEYS.forEach(k => {
     const scaledPrice = scalePrice(data.prices[k]);
