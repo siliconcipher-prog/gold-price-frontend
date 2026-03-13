@@ -16,7 +16,8 @@ let currentData = null;
 let isLoading = false;
 let lastWeightToggleAt = 0;
 const ANALYSIS_WINDOW_DAYS = 30;
-const PORTFOLIO_STORAGE_KEY = "goldPortfolio";
+const PORTFOLIO_STORAGE_KEY = "goldPortfolio_v1";
+const LEGACY_PORTFOLIO_STORAGE_KEY = "goldPortfolio";
 
 const WEIGHT_TOGGLE_DEBOUNCE_MS = 220;
 const PRICE_ANIMATION_MS = 340;
@@ -844,6 +845,7 @@ function ensurePortfolioSection() {
       </div>
     </div>
 
+    <div id="portfolioBreakdown" class="portfolio-breakdown"></div>
     <div id="portfolioList" class="portfolio-list"></div>
   `;
 
@@ -895,6 +897,8 @@ function ensurePortfolioModal() {
           <input id="portfolioBuyPrice" type="number" min="0" step="0.01" placeholder="6200" required>
         </label>
 
+        <p id="portfolioFormWarning" class="portfolio-form-warning hidden"></p>
+
         <label>
           <span>Buy Date</span>
           <input id="portfolioBuyDate" type="date" required>
@@ -910,6 +914,97 @@ function ensurePortfolioModal() {
 
   document.body.appendChild(modal);
   return modal;
+}
+
+function ensureMainTabs() {
+  const container = document.querySelector(".container");
+  const subtitle = document.querySelector(".subtitle");
+  if (!container || !subtitle) return null;
+
+  let tabs = document.querySelector(".main-tabs");
+  if (!tabs) {
+    tabs = document.createElement("div");
+    tabs.className = "main-tabs";
+    tabs.innerHTML = `
+      <button class="tab-btn active" data-tab="price" type="button">Price</button>
+      <button class="tab-btn" data-tab="calculator" type="button">Calculator</button>
+      <button class="tab-btn" data-tab="portfolio" type="button">Portfolio</button>
+    `;
+    subtitle.insertAdjacentElement("afterend", tabs);
+  }
+
+  const ensureTabContent = (id, sections, active) => {
+    let panel = document.getElementById(id);
+    if (!panel) {
+      panel = document.createElement("div");
+      panel.id = id;
+      panel.className = `tab-content${active ? " active" : ""}`;
+      const anchor = sections.find(section => section && section.parentNode);
+      if (anchor?.parentNode) {
+        anchor.parentNode.insertBefore(panel, anchor);
+      } else {
+        container.appendChild(panel);
+      }
+    }
+
+    sections.forEach(section => {
+      if (section && section.parentNode !== panel) {
+        panel.appendChild(section);
+      }
+    });
+
+    return panel;
+  };
+
+  ensureMonthlyStatsSection();
+  ensurePortfolioSection();
+
+  const priceSections = [
+    document.querySelector(".insight-block"),
+    document.getElementById("meta"),
+    document.getElementById("chartWrapper"),
+    document.getElementById("monthlyStats")
+  ];
+  const calculatorSections = [
+    document.getElementById("estimateJump"),
+    document.getElementById("estimator"),
+    document.querySelector(".pricing-guide")
+  ];
+  const portfolioSections = [
+    document.getElementById("portfolioSection")
+  ];
+
+  ensureTabContent("tab-price", priceSections, true);
+  ensureTabContent("tab-calculator", calculatorSections, false);
+  ensureTabContent("tab-portfolio", portfolioSections, false);
+
+  return tabs;
+}
+
+function initMainTabs() {
+  const tabsWrap = ensureMainTabs();
+  if (!tabsWrap) return;
+
+  const tabs = document.querySelectorAll(".tab-btn");
+  const tabContents = document.querySelectorAll(".tab-content");
+
+  if (!tabs.length || !tabContents.length) return;
+
+  tabs.forEach(tab => {
+    if (tab.dataset.bound === "true") return;
+    tab.dataset.bound = "true";
+
+    tab.addEventListener("click", () => {
+      tabs.forEach(t => t.classList.remove("active"));
+      tabContents.forEach(content => content.classList.remove("active"));
+
+      tab.classList.add("active");
+      const target = document.getElementById(`tab-${tab.dataset.tab}`);
+      if (target) {
+        target.classList.add("active");
+      }
+    });
+  });
 }
 
 /* =========================
@@ -1737,7 +1832,16 @@ function generatePortfolioItemId() {
 function loadPortfolio() {
   try {
     const raw = localStorage.getItem(PORTFOLIO_STORAGE_KEY);
-    if (!raw) return [];
+    if (!raw) {
+      const legacy = localStorage.getItem(LEGACY_PORTFOLIO_STORAGE_KEY);
+      if (!legacy) return [];
+      const parsedLegacy = JSON.parse(legacy);
+      if (Array.isArray(parsedLegacy)) {
+        localStorage.setItem(PORTFOLIO_STORAGE_KEY, JSON.stringify(parsedLegacy));
+        return parsedLegacy;
+      }
+      return [];
+    }
     const parsed = JSON.parse(raw);
     return Array.isArray(parsed) ? parsed : [];
   } catch {
@@ -1756,13 +1860,21 @@ function getPortfolioMarkup(item) {
   const invested = item.weight * item.buyPrice;
   const profit =
     typeof currentValue === "number" ? currentValue - invested : null;
+  const profitPercent =
+    typeof profit === "number" && invested > 0
+      ? (profit / invested) * 100
+      : null;
   const profitClass =
     profit > 0 ? "up" : profit < 0 ? "down" : "";
+  const profitText =
+    typeof profit === "number"
+      ? `${formatRupee(profit)} (${Math.round(profitPercent)}%)`
+      : "-";
 
   return `
     <article class="portfolio-card" data-id="${item.id}">
       <div class="portfolio-card-head">
-        <div>
+        <div class="portfolio-item-meta">
           <h4>${item.name}</h4>
           <p>${item.weight}g • ${item.karat}</p>
         </div>
@@ -1770,11 +1882,11 @@ function getPortfolioMarkup(item) {
       </div>
       <div class="portfolio-card-grid">
         <div>
-          <span>Buy price</span>
+          <span>Buy Rate</span>
           <strong>${formatRupee(item.buyPrice)}/g</strong>
         </div>
         <div>
-          <span>Current price</span>
+          <span>Current Rate</span>
           <strong>${typeof currentPrice === "number" ? `${formatRupee(currentPrice)}/g` : "-"}</strong>
         </div>
         <div>
@@ -1787,7 +1899,7 @@ function getPortfolioMarkup(item) {
         </div>
         <div class="portfolio-profit ${profitClass}">
           <span>Profit/Loss</span>
-          <strong>${typeof profit === "number" ? formatRupee(profit) : "-"}</strong>
+          <strong>${profitText}</strong>
         </div>
         <div>
           <span>Buy date</span>
@@ -1802,18 +1914,26 @@ function renderPortfolio() {
   ensurePortfolioSection();
 
   const listEl = document.getElementById("portfolioList");
+  const breakdownEl = document.getElementById("portfolioBreakdown");
   const totalWeightEl = document.getElementById("portfolioTotalWeight");
   const totalInvestmentEl = document.getElementById("portfolioTotalInvestment");
   const currentValueEl = document.getElementById("portfolioCurrentValue");
   const totalProfitEl = document.getElementById("portfolioProfitLoss");
 
-  if (!listEl || !totalWeightEl || !totalInvestmentEl || !currentValueEl || !totalProfitEl) {
+  if (!listEl || !breakdownEl || !totalWeightEl || !totalInvestmentEl || !currentValueEl || !totalProfitEl) {
     return;
   }
 
   const items = loadPortfolio();
   if (!items.length) {
-    listEl.innerHTML = `<div class="portfolio-empty">No gold items added yet.</div>`;
+    breakdownEl.innerHTML = "";
+    listEl.innerHTML = `
+      <div class="portfolio-empty">
+        <p>You haven't added any gold yet.</p>
+        <p>Track your jewellery or coins to see how their value changes.</p>
+        <button type="button" class="portfolio-add-btn portfolio-empty-btn" id="portfolioEmptyAction">Add Gold Item</button>
+      </div>
+    `;
     totalWeightEl.textContent = "-";
     totalInvestmentEl.textContent = "-";
     currentValueEl.textContent = "-";
@@ -1826,10 +1946,18 @@ function renderPortfolio() {
   let totalInvestment = 0;
   let totalCurrentValue = 0;
   const hasLivePrices = Boolean(currentPrices);
+  const karatBreakdown = {
+    "24K": 0,
+    "22K": 0,
+    "18K": 0
+  };
 
   items.forEach(item => {
     totalWeight += Number(item.weight) || 0;
     totalInvestment += (Number(item.weight) || 0) * (Number(item.buyPrice) || 0);
+    if (Object.prototype.hasOwnProperty.call(karatBreakdown, item.karat)) {
+      karatBreakdown[item.karat] += Number(item.weight) || 0;
+    }
     if (typeof currentPrices?.[item.karat] === "number") {
       totalCurrentValue += (Number(item.weight) || 0) * currentPrices[item.karat];
     }
@@ -1847,6 +1975,11 @@ function renderPortfolio() {
   totalProfitEl.className =
     !hasLivePrices ? "" : totalProfit > 0 ? "up" : totalProfit < 0 ? "down" : "";
 
+  breakdownEl.innerHTML = `
+    <div class="portfolio-breakdown-card">22K -> ${karatBreakdown["22K"].toLocaleString("en-IN", { maximumFractionDigits: 2 })}g</div>
+    <div class="portfolio-breakdown-card">24K -> ${karatBreakdown["24K"].toLocaleString("en-IN", { maximumFractionDigits: 2 })}g</div>
+    <div class="portfolio-breakdown-card">18K -> ${karatBreakdown["18K"].toLocaleString("en-IN", { maximumFractionDigits: 2 })}g</div>
+  `;
   listEl.innerHTML = items.map(getPortfolioMarkup).join("");
 }
 
@@ -1858,6 +1991,9 @@ function addPortfolioItem(item) {
 }
 
 function deletePortfolioItem(id) {
+  if (!window.confirm("Delete this gold item from your portfolio?")) {
+    return;
+  }
   const items = loadPortfolio().filter(item => item.id !== id);
   savePortfolio(items);
   renderPortfolio();
@@ -1869,6 +2005,30 @@ function openPortfolioModal() {
 
 function closePortfolioModal() {
   document.getElementById("portfolioModal")?.classList.add("hidden");
+}
+
+function updatePortfolioBuyRateWarning() {
+  const warningEl = document.getElementById("portfolioFormWarning");
+  const karat = document.getElementById("portfolioKarat")?.value;
+  const buyPrice = Number(document.getElementById("portfolioBuyPrice")?.value);
+  const currentPrice = karat ? currentPrices?.[karat] : null;
+
+  if (!warningEl) return false;
+
+  if (
+    typeof currentPrice === "number" &&
+    Number.isFinite(buyPrice) &&
+    buyPrice > currentPrice * 3
+  ) {
+    warningEl.textContent =
+      "Buy Rate looks unusually high compared to the current live rate. Please check the value before saving.";
+    warningEl.classList.remove("hidden");
+    return true;
+  }
+
+  warningEl.textContent = "";
+  warningEl.classList.add("hidden");
+  return false;
 }
 
 function bindPortfolioUi() {
@@ -1884,6 +2044,10 @@ function bindPortfolioUi() {
     ?.addEventListener("click", closePortfolioModal);
   document.getElementById("cancelPortfolioModal")
     ?.addEventListener("click", closePortfolioModal);
+  document.getElementById("portfolioKarat")
+    ?.addEventListener("change", updatePortfolioBuyRateWarning);
+  document.getElementById("portfolioBuyPrice")
+    ?.addEventListener("input", updatePortfolioBuyRateWarning);
 
   document.getElementById("portfolioForm")
     ?.addEventListener("submit", event => {
@@ -1896,6 +2060,10 @@ function bindPortfolioUi() {
       const buyDate = document.getElementById("portfolioBuyDate")?.value;
 
       if (!name || !weight || weight <= 0 || !karat || !buyPrice || buyPrice <= 0 || !buyDate) {
+        return;
+      }
+
+      if (updatePortfolioBuyRateWarning()) {
         return;
       }
 
@@ -1916,6 +2084,11 @@ function bindPortfolioUi() {
 
   document.getElementById("portfolioList")
     ?.addEventListener("click", event => {
+      const addBtn = event.target.closest("#portfolioEmptyAction");
+      if (addBtn) {
+        openPortfolioModal();
+        return;
+      }
       const btn = event.target.closest(".portfolio-delete-btn");
       if (!btn) return;
       deletePortfolioItem(btn.dataset.id);
@@ -2605,6 +2778,7 @@ document.addEventListener("click", e => {
 
 bindPortfolioUi();
 renderPortfolio();
+initMainTabs();
 
 if ("serviceWorker" in navigator) {
   window.addEventListener("load", () => {
