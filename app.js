@@ -1219,8 +1219,14 @@ function getMarketAnalysis(history, karat) {
   if (prices.length < 2) {
     return {
       today: 0,
+      yesterday: 0,
+      price7DaysAgo: 0,
       min: 0,
       max: 0,
+      weeklyLow: 0,
+      weeklyHigh: 0,
+      monthlyLow: 0,
+      monthlyHigh: 0,
       score: 50,
       zone: "MID RANGE",
       trend: "SIDEWAYS",
@@ -1233,9 +1239,14 @@ function getMarketAnalysis(history, karat) {
   }
 
   const today = prices.at(-1);
+  const yesterday = prices.at(-2) ?? today;
+  const price7DaysAgo = prices.length >= 7 ? prices.at(-7) : prices[0];
   const min = Math.min(...prices);
   const max = Math.max(...prices);
   const range = max - min;
+  const recent7 = prices.slice(-7);
+  const weeklyLow = Math.min(...recent7);
+  const weeklyHigh = Math.max(...recent7);
   const movingAvg30 =
     prices.reduce((sum, p) => sum + p, 0) / prices.length;
 
@@ -1322,8 +1333,14 @@ function getMarketAnalysis(history, karat) {
 
   return {
     today,
+    yesterday,
+    price7DaysAgo,
     min,
     max,
+    weeklyLow,
+    weeklyHigh,
+    monthlyLow: min,
+    monthlyHigh: max,
     score,
     zone,
     trend,
@@ -1336,41 +1353,38 @@ function getMarketAnalysis(history, karat) {
 }
 
 function generateMarketSummary(data) {
-  const { zone, trend, volatility, signal } = data;
+  const {
+    today: currentPrice,
+    yesterday: yesterdayPrice,
+    monthlyLow,
+    monthlyHigh
+  } = data;
 
-  let primary = "Gold prices are currently average. It is okay to buy, but prices are not particularly low.";
-  if (signal === "GOOD BUY WINDOW") {
-    primary = "Gold prices are currently low compared to recent trends. This may be a good time to buy.";
-  } else if (signal === "PRICES ELEVATED") {
-    primary = "Gold prices are relatively high compared to recent trends. You may want to wait before buying.";
-  } else if (signal === "WAIT BEFORE BUYING") {
-    primary = "Gold prices are currently trending downward. Waiting may give a better price.";
-  }
+  const dailyChange = currentPrice - yesterdayPrice;
+  const monthlyRange = monthlyHigh - monthlyLow;
+  const rangePosition = monthlyRange > 0
+    ? (currentPrice - monthlyLow) / monthlyRange
+    : 0.5;
 
-  let zoneSimple = "Prices are in the middle of the recent range.";
-  if (zone === "LOW ZONE") {
-    zoneSimple = "Prices are near the lower end of the recent range.";
-  } else if (zone === "HIGH ZONE") {
-    zoneSimple = "Prices are near the higher end of the recent range.";
-  }
+  const isFlat = Math.abs(dailyChange) < 0.001;
+  const indicator = isFlat ? "➡" : dailyChange > 0 ? "⬆" : "⬇";
+  const movement = isFlat
+    ? "holds steady"
+    : dailyChange > 0
+      ? "rises"
+      : "falls";
 
-  let trendSimple = "Prices are moving sideways.";
-  if (trend === "UPTREND" || trend === "STRONG UPTREND") {
-    trendSimple = "Prices are trending upward.";
-  } else if (trend === "DOWNTREND") {
-    trendSimple = "Prices are trending downward.";
-  }
+  const context =
+    rangePosition < 0.25
+      ? "near monthly lows"
+      : rangePosition > 0.75
+        ? "near monthly highs"
+        : "near mid-range";
 
-  const volatilitySimple =
-    volatility === "LOW VOLATILITY"
-      ? "Price movement is stable right now."
-      : "Market volatility means prices may change quickly.";
-
-  const technical =
-    `Technical view: ${zone.toLowerCase()}, ${trend.toLowerCase()}, ${volatility.toLowerCase()}.`;
-
-  const secondary = `${zoneSimple} ${trendSimple} ${volatilitySimple}`;
-  return `${primary} ${secondary} ${technical}`;
+  const headline = `${indicator} Gold ${movement} ${context}`;
+  return headline.length <= 60
+    ? headline
+    : "➡ Gold holds steady near mid-range";
 }
 
 function generateInsightBadges(history, karat, insightText) {
