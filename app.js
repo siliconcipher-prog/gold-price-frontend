@@ -377,6 +377,17 @@ function formatWeight(value) {
   })}g`;
 }
 
+function formatPortfolioDate(value) {
+  if (!value) return "-";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value;
+  return date.toLocaleDateString("en-IN", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric"
+  });
+}
+
 function toPaise(value) {
   return Math.round(Number(value) * 100);
 }
@@ -2067,6 +2078,7 @@ function getPortfolioMarkup(item) {
   const normalizedItem = normalizePortfolioItem(item);
   const typeMeta = PORTFOLIO_TYPE_META[normalizedItem.type];
   const itemName = normalizedItem.name;
+  const title = itemName || typeMeta.label;
   const currentPrice = currentPrices?.[item.karat];
   const currentValue =
     typeof currentPrice === "number" ? item.weight * currentPrice : null;
@@ -2081,45 +2093,37 @@ function getPortfolioMarkup(item) {
     profit > 0 ? "up" : profit < 0 ? "down" : "";
   const profitText =
     typeof profit === "number"
-      ? `${formatRupee(profit)} (${Math.round(profitPercent)}%)`
+      ? `${profit > 0 ? "+" : ""}${formatRupee(profit)}`
       : "-";
+  const profitSubtext =
+    typeof profitPercent === "number"
+      ? `${profitPercent > 0 ? "+" : ""}${Math.round(profitPercent)}%`
+      : "";
 
   return `
     <article class="portfolio-card" data-id="${item.id}">
       <div class="portfolio-card-head">
         <div class="portfolio-item-meta">
-          <h4>${typeMeta.icon} ${typeMeta.label}</h4>
-          ${itemName ? `<p class="portfolio-item-name">${itemName}</p>` : ""}
-          <p>${item.weight}g • ${item.karat}</p>
+          <h4>${title}</h4>
+          <p>${formatWeight(item.weight)} • ${item.karat}</p>
+          <p class="portfolio-item-date">Bought on ${formatPortfolioDate(item.buyDate)}</p>
         </div>
-        <button class="portfolio-delete-btn" type="button" data-id="${item.id}">Delete</button>
+        <div class="portfolio-card-side">
+          <div class="portfolio-card-profit-pill ${profitClass}">
+            <strong>${profitText}</strong>
+            ${profitSubtext ? `<span>${profitSubtext}</span>` : ""}
+          </div>
+          <button class="portfolio-delete-btn" type="button" data-id="${item.id}" aria-label="Delete ${title}">Delete</button>
+        </div>
       </div>
-      <div class="portfolio-card-grid">
-        <div class="portfolio-stat">
-          <span>Buy Rate</span>
+      <div class="portfolio-card-rates">
+        <div class="portfolio-rate-block">
+          <span>Bought @</span>
           <strong>${formatRupee(item.buyPrice)}/g</strong>
         </div>
-        <div class="portfolio-stat">
-          <span>Current Rate</span>
+        <div class="portfolio-rate-block portfolio-rate-block-current">
+          <span>Now @</span>
           <strong>${typeof currentPrice === "number" ? `${formatRupee(currentPrice)}/g` : "-"}</strong>
-        </div>
-        <div class="portfolio-stat">
-          <span>Investment</span>
-          <strong>${formatRupee(invested)}</strong>
-        </div>
-        <div class="portfolio-stat">
-          <span>Current value</span>
-          <strong>${typeof currentValue === "number" ? formatRupee(currentValue) : "-"}</strong>
-        </div>
-      </div>
-      <div class="portfolio-card-footer">
-        <div class="portfolio-card-date">
-          <span>Buy date</span>
-          <strong>${item.buyDate || "-"}</strong>
-        </div>
-        <div class="portfolio-card-profit ${profitClass}">
-          <span>Profit/Loss</span>
-          <strong>${profitText}</strong>
         </div>
       </div>
     </article>

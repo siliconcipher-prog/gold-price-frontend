@@ -3057,23 +3057,16 @@ input[type=number]::-webkit-outer-spin-button {
 }
 
 .portfolio-card{
-  padding:18px;
-  border-radius:20px;
-  background:linear-gradient(180deg, rgba(255,255,255,0.025), rgba(255,255,255,0.015));
+  padding:20px 22px;
+  border-radius:24px;
+  background:linear-gradient(180deg, rgba(10,14,24,0.96), rgba(7,10,18,0.94));
   border:1px solid rgba(255,255,255,0.08);
-  box-shadow:0 14px 30px rgba(0,0,0,0.18);
-}
-
-.portfolio-card-grid span{
-  display:block;
-  font-size:12px;
-  color:var(--text-muted);
-  margin-bottom:6px;
+  box-shadow:0 18px 34px rgba(0,0,0,0.2);
 }
 
 .portfolio-list{
   display:grid;
-  gap:12px;
+  gap:14px;
   margin-top:16px;
 }
 
@@ -3081,8 +3074,8 @@ input[type=number]::-webkit-outer-spin-button {
   display:flex;
   align-items:flex-start;
   justify-content:space-between;
-  gap:12px;
-  margin-bottom:16px;
+  gap:18px;
+  margin-bottom:18px;
 }
 
 .portfolio-item-meta{
@@ -3091,77 +3084,93 @@ input[type=number]::-webkit-outer-spin-button {
 
 .portfolio-card-head h4{
   margin:0;
-  font-size:20px;
+  font-size:18px;
 }
 
 .portfolio-card-head p{
   margin:6px 0 0;
-  font-size:13px;
+  font-size:14px;
   color:var(--text-muted);
 }
 
-.portfolio-item-name{
-  font-size:12px;
-  color:var(--text-main);
-  opacity:0.9;
+.portfolio-item-date{
+  font-size:13px;
+  opacity:0.88;
 }
 
-.portfolio-card-grid{
-  display:grid;
-  grid-template-columns:repeat(2,minmax(0,1fr));
-  gap:12px;
-}
-
-.portfolio-stat{
-  padding:14px;
-  border-radius:14px;
-  background:rgba(255,255,255,0.025);
-  border:1px solid rgba(255,255,255,0.06);
-}
-
-.portfolio-card-grid strong{
-  font-size:15px;
-  color:var(--text-main);
-}
-
-.portfolio-card-footer{
+.portfolio-card-side{
   display:flex;
+  flex-direction:column;
   align-items:flex-end;
+  gap:10px;
+}
+
+.portfolio-delete-btn{
+  padding:7px 12px;
+  font-size:12px;
+  border-color:rgba(255,255,255,0.08);
+}
+
+.portfolio-card-profit-pill{
+  min-width:124px;
+  padding:10px 14px;
+  border-radius:999px;
+  background:rgba(255,255,255,0.06);
+  border:1px solid rgba(255,255,255,0.08);
+  text-align:center;
+}
+
+.portfolio-card-profit-pill strong{
+  display:block;
+  font-size:16px;
+  line-height:1;
+}
+
+.portfolio-card-profit-pill span{
+  display:block;
+  margin-top:4px;
+  font-size:12px;
+  color:inherit;
+}
+
+.portfolio-card-profit-pill.up{
+  background:rgba(34,197,94,0.14);
+  border-color:rgba(34,197,94,0.26);
+  color:#22c55e;
+}
+
+.portfolio-card-profit-pill.down{
+  background:rgba(239,68,68,0.14);
+  border-color:rgba(239,68,68,0.26);
+  color:#ef4444;
+}
+
+.portfolio-card-rates{
+  display:flex;
   justify-content:space-between;
-  gap:12px;
-  margin-top:14px;
+  gap:18px;
   padding-top:14px;
   border-top:1px solid rgba(255,255,255,0.06);
 }
 
-.portfolio-card-date span,
-.portfolio-card-profit span{
+.portfolio-rate-block{
+  min-width:0;
+}
+
+.portfolio-rate-block span{
   display:block;
-  font-size:12px;
+  font-size:13px;
   color:var(--text-muted);
   margin-bottom:6px;
 }
 
-.portfolio-card-date strong{
-  font-size:15px;
+.portfolio-rate-block strong{
+  font-size:16px;
   color:var(--text-main);
 }
 
-.portfolio-card-profit{
+.portfolio-rate-block-current{
   text-align:right;
-}
-
-.portfolio-card-profit strong{
-  font-size:24px;
-  line-height:1;
-}
-
-.portfolio-card-profit.up strong{
-  color:#22c55e;
-}
-
-.portfolio-card-profit.down strong{
-  color:#ef4444;
 }
 
 .portfolio-empty{
@@ -3352,8 +3361,7 @@ input[type=number]::-webkit-outer-spin-button {
   }
 
   .portfolio-analytics,
-  .portfolio-secondary,
-  .portfolio-card-grid{
+  .portfolio-secondary{
     grid-template-columns:1fr;
   }
 
@@ -3371,13 +3379,16 @@ input[type=number]::-webkit-outer-spin-button {
     width:100%;
   }
 
-  .portfolio-card-footer{
+  .portfolio-card-head,
+  .portfolio-card-rates{
     flex-direction:column;
     align-items:flex-start;
   }
 
-  .portfolio-card-profit{
+  .portfolio-card-side,
+  .portfolio-rate-block-current{
     text-align:left;
+    align-items:flex-start;
   }
 }
 
