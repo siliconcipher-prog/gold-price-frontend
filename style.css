@@ -1401,7 +1401,7 @@ input:focus {
   display:flex;
   justify-content:space-between;
   align-items:center;
-  margin-bottom:10px;
+  margin-bottom:14px;
   font-size:11px;
   font-weight:700;
   letter-spacing:0.04em;
@@ -1413,28 +1413,36 @@ input:focus {
   display:inline-flex;
   align-items:center;
   gap:6px;
+  position:static;
 }
 
-.buy-zone-labels span:first-child::after{
-  content:"";
+.buy-zone-labels span::before,
+.buy-zone-labels span::after{
+  content:none !important;
+  display:none !important;
+}
+
+.signal-dot{
+  display:inline-block;
   width:12px;
   height:12px;
   border-radius:50%;
+  flex:0 0 12px;
+}
+
+.signal-dot-low{
   background:#38d16b;
   box-shadow:0 0 10px rgba(56, 209, 107, 0.45);
 }
 
-.buy-zone-labels span:last-child::after{
-  content:"";
-  width:12px;
-  height:12px;
-  border-radius:50%;
+.signal-dot-high{
   background:#ff5668;
   box-shadow:0 0 10px rgba(255, 86, 104, 0.42);
 }
 
 .buy-zone-track{
   position:relative;
+  margin-top:2px;
   height:11px;
   border-radius:999px;
   overflow:hidden;
@@ -1452,18 +1460,18 @@ input:focus {
   position:absolute;
   top:50%;
   left:50%;
-  width:14px;
-  height:14px;
+  width:11px;
+  height:11px;
   border-radius:50%;
   background:currentColor;
-  border:2px solid rgba(255,255,255,0.7);
-  box-shadow:0 0 0 2px rgba(255,255,255,0.08);
+  border:1.5px solid rgba(255,255,255,0.78);
+  box-shadow:0 0 0 2px rgba(255,255,255,0.06);
   transform:translate(-50%,-50%);
 }
 
 .meter-dot{
-  width:14px;
-  height:14px;
+  width:11px;
+  height:11px;
   border-radius:50%;
 }
 

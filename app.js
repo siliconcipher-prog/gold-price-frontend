@@ -1017,8 +1017,8 @@ function ensureMonthlyStatsSection() {
 
     <div class="buy-zone-meter" aria-label="Monthly buy zone meter">
       <div class="buy-zone-labels" aria-hidden="true">
-        <span>LOW</span>
-        <span>HIGH</span>
+        <span><i class="signal-dot signal-dot-low"></i>LOW</span>
+        <span>HIGH<i class="signal-dot signal-dot-high"></i></span>
       </div>
       <div class="buy-zone-track">
         <div class="buy-zone-fill" id="mMeterFill"></div>
