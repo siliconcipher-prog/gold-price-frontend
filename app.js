@@ -377,174 +377,6 @@ function formatWeight(value) {
   })}g`;
 }
 
-function formatPercent(value, decimals = 0, includeSign = false) {
-  const num = Number(value);
-  if (!Number.isFinite(num)) return "-";
-  const sign = includeSign && num > 0 ? "+" : "";
-  return `${sign}${num.toFixed(decimals)}%`;
-}
-
-function calculatePosition(current, low, high) {
-  const currentValue = Number(current);
-  const lowValue = Number(low);
-  const highValue = Number(high);
-  const range = highValue - lowValue;
-
-  if (
-    !Number.isFinite(currentValue) ||
-    !Number.isFinite(lowValue) ||
-    !Number.isFinite(highValue) ||
-    range <= 0
-  ) {
-    return {
-      position: 50,
-      label: "Mid Range",
-      signal: {
-        label: "🟡 Neutral",
-        tone: "neutral",
-        note: "Price in mid range"
-      }
-    };
-  }
-
-  const position = Math.max(
-    2,
-    Math.min(98, Math.round(((currentValue - lowValue) / range) * 100))
-  );
-
-  if (position < 30) {
-    return {
-      position,
-      label: "Near Low",
-      signal: {
-        label: "🟢 Good Time to Buy",
-        tone: "good",
-        note: "Price near monthly low"
-      }
-    };
-  }
-
-  if (position > 70) {
-    return {
-      position,
-      label: "Near High",
-      signal: {
-        label: "🔴 Expensive / Wait",
-        tone: "high",
-        note: "Price near monthly high"
-      }
-    };
-  }
-
-  return {
-    position,
-    label: "Mid Range",
-    signal: {
-      label: "🟡 Neutral",
-      tone: "neutral",
-      note: "Price in mid range"
-    }
-  };
-}
-
-function getTrend(change) {
-  const value = Number(change);
-  if (!Number.isFinite(value) || value === 0) {
-    return { label: "→ Stable", tone: "" };
-  }
-
-  if (value < 0) {
-    return { label: `↓ Falling (${formatRupee(Math.abs(value))})`, tone: "down" };
-  }
-
-  return { label: `↑ Rising (${formatRupee(value)})`, tone: "up" };
-}
-
-function getDistanceLabel(position) {
-  const value = Number(position);
-  if (!Number.isFinite(value)) return "Mid range";
-  if (value < 5) return "At monthly bottom";
-  if (value < 30) return "Near low";
-  if (value > 70) return "Near high";
-  return "Mid range";
-}
-
-function getReasonChips(stats) {
-  const reasons = [];
-  const position = Number(stats?.currentPositionPercent);
-  const monthlyChange = Number(stats?.change);
-  const rangePercent = Number(stats?.rangePercent);
-
-  if (Number.isFinite(position)) {
-    if (position < 30) reasons.push("Near monthly low");
-    if (position > 70) reasons.push("Near monthly high");
-    if (position < 35 && monthlyChange < 0) reasons.push("Value zone");
-  }
-
-  if (Number.isFinite(monthlyChange)) {
-    if (monthlyChange < 0) reasons.push("Falling trend");
-    if (monthlyChange > 0) reasons.push("Uptrend ongoing");
-  }
-
-  if (Number.isFinite(rangePercent) && rangePercent > 15) {
-    reasons.push("High volatility month");
-  }
-
-  return reasons;
-}
-
-function getConfidenceScore(stats) {
-  let confidence = 50;
-  const position = Number(stats?.currentPositionPercent);
-  const monthlyChange = Number(stats?.change);
-  const rangePercent = Number(stats?.rangePercent);
-
-  if (Number.isFinite(position)) {
-    if (position < 30) confidence += 20;
-    if (position > 70) confidence -= 20;
-  }
-
-  if (Number.isFinite(monthlyChange)) {
-    if (monthlyChange < 0) confidence += 10;
-    if (monthlyChange > 0) confidence -= 10;
-  }
-
-  if (Number.isFinite(rangePercent) && rangePercent > 15) confidence += 5;
-
-  return Math.max(0, Math.min(100, confidence));
-}
-
-function findLastTimePriceWasNearCurrent(history, karat, currentPrice) {
-  if (!Array.isArray(history) || !Number.isFinite(Number(currentPrice))) return null;
-
-  const current = Number(currentPrice);
-  const threshold = Math.max(current * 0.01, 20);
-  const rows = history
-    .slice()
-    .sort((a, b) =>
-      new Date(a.date || a.recorded_on || a.recorded_at) -
-      new Date(b.date || b.recorded_on || b.recorded_at)
-    );
-  const latestRow = rows.at(-1);
-  const latestRowDate = latestRow
-    ? new Date(latestRow.date || latestRow.recorded_on || latestRow.recorded_at)
-    : null;
-  if (!latestRowDate || Number.isNaN(latestRowDate.getTime())) return null;
-
-  for (let i = rows.length - 2; i >= 0; i--) {
-    const row = rows[i];
-    const dt = new Date(row.date || row.recorded_on || row.recorded_at);
-    const price = getKaratValue(row, karat);
-    if (Number.isNaN(dt.getTime()) || !Number.isFinite(price)) continue;
-    if (Math.abs(price - current) <= threshold) {
-      const daysAgo = Math.max(1, Math.round((latestRowDate - dt) / 86400000));
-      return daysAgo;
-    }
-  }
-
-  return null;
-}
-
 function formatPortfolioDate(value) {
   if (!value) return "-";
   const date = new Date(value);
@@ -1000,58 +832,29 @@ function ensureMonthlyStatsSection() {
   section.id = "monthlyStats";
   section.className = "monthly-stats";
   section.innerHTML = `
-    <div class="monthly-stats-head">
-      <div>
-        <h3>Should I Buy Gold Today?</h3>
-        <p id="statsSubtitle">India • 24K • per gram</p>
-      </div>
-    </div>
-
-    <div class="gold-signal neutral" id="mSignalCard">
-      <span class="signal-label">Smart Signal</span>
-      <strong id="mSignal">Neutral</strong>
-      <p id="mSignalNote">Price in mid range</p>
-    </div>
-
-    <div class="reason-chips" id="mReasons"></div>
-
-    <div class="buy-zone-meter" aria-label="Monthly buy zone meter">
-      <div class="buy-zone-labels" aria-hidden="true">
-        <span>LOW 🟢</span>
-        <span>HIGH 🔴</span>
-      </div>
-      <div class="buy-zone-track">
-        <div class="buy-zone-fill" id="mMeterFill"></div>
-        <div class="buy-zone-marker meter-dot" id="mMeterMarker"></div>
-      </div>
-    </div>
-
+    <h3>Monthly Gold Stats</h3>
+    <p id="statsSubtitle">India • 24K • per gram</p>
     <div class="stats-grid">
-      <div class="stat-card stat-card-emphasis">
-        <span>Current Position</span>
-        <strong id="mPosition">-</strong>
+      <div class="stat-card">
+        <span>High</span>
+        <strong id="mHigh">-</strong>
       </div>
       <div class="stat-card">
-        <span>Trend Direction</span>
-        <strong id="mTrend">-</strong>
-      </div>
-      <div class="stat-card">
-        <span>Range Spread</span>
-        <strong id="mRange">-</strong>
-      </div>
-      <div class="stat-card">
-        <span>Distance from Low</span>
-        <strong id="mDistance">-</strong>
+        <span>Low</span>
+        <strong id="mLow">-</strong>
       </div>
       <div class="stat-card">
         <span>Average</span>
         <strong id="mAvg">-</strong>
       </div>
-    </div>
-
-    <div class="monthly-trust">
-      <p id="mConfidence" class="trust-confidence">Confidence: -</p>
-      <p id="mLastSeen" class="trust-last-seen"></p>
+      <div class="stat-card">
+        <span>Monthly Change</span>
+        <strong id="mChange">-</strong>
+      </div>
+      <div class="stat-card">
+        <span>Volatility</span>
+        <strong id="mVolatility">-</strong>
+      </div>
     </div>
   `;
 
@@ -2004,42 +1807,22 @@ function getMonthlyStats(history, karat = "24K") {
   const endPrice = prices[prices.length - 1];
   const change = endPrice - startPrice;
   const range = high - low;
-  const positionInfo = calculatePosition(endPrice, low, high);
-  const rangePercent = low > 0 ? (range / low) * 100 : null;
-  const distanceFromLow = endPrice - low;
-  const distancePercent = low > 0 ? (distanceFromLow / low) * 100 : null;
-  const lastSeenDaysAgo = findLastTimePriceWasNearCurrent(
-    monthRows,
-    karat,
-    endPrice
-  );
-  const confidence = getConfidenceScore({
-    currentPositionPercent: positionInfo.position,
-    change,
-    rangePercent
-  });
+
+  let volatility = "Low";
+  if (range < 100) {
+    volatility = "Low";
+  } else if (range < 300) {
+    volatility = "Medium";
+  } else {
+    volatility = "High";
+  }
 
   return {
     high,
     low,
     avg,
     change,
-    range,
-    rangePercent,
-    current: endPrice,
-    currentPositionPercent: positionInfo.position,
-    currentPositionLabel: positionInfo.label,
-    signal: positionInfo.signal,
-    distanceFromLow,
-    distancePercent,
-    distanceLabel: getDistanceLabel(positionInfo.position),
-    reasons: getReasonChips({
-      currentPositionPercent: positionInfo.position,
-      change,
-      rangePercent
-    }),
-    confidence,
-    lastSeenDaysAgo
+    volatility
   };
 }
 
@@ -2047,35 +1830,19 @@ function updateMonthlyStats(history) {
   ensureMonthlyStatsSection();
 
   const subtitleEl = document.getElementById("statsSubtitle");
-  const signalCardEl = document.getElementById("mSignalCard");
-  const signalEl = document.getElementById("mSignal");
-  const signalNoteEl = document.getElementById("mSignalNote");
-  const reasonsEl = document.getElementById("mReasons");
-  const meterFillEl = document.getElementById("mMeterFill");
-  const meterMarkerEl = document.getElementById("mMeterMarker");
-  const positionEl = document.getElementById("mPosition");
-  const trendEl = document.getElementById("mTrend");
-  const rangeEl = document.getElementById("mRange");
-  const distanceEl = document.getElementById("mDistance");
+  const highEl = document.getElementById("mHigh");
+  const lowEl = document.getElementById("mLow");
   const avgEl = document.getElementById("mAvg");
-  const confidenceEl = document.getElementById("mConfidence");
-  const lastSeenEl = document.getElementById("mLastSeen");
+  const changeEl = document.getElementById("mChange");
+  const volatilityEl = document.getElementById("mVolatility");
 
   if (
     !subtitleEl ||
-    !signalCardEl ||
-    !signalEl ||
-    !signalNoteEl ||
-    !reasonsEl ||
-    !meterFillEl ||
-    !meterMarkerEl ||
-    !positionEl ||
-    !trendEl ||
-    !rangeEl ||
-    !distanceEl ||
+    !highEl ||
+    !lowEl ||
     !avgEl ||
-    !confidenceEl ||
-    !lastSeenEl
+    !changeEl ||
+    !volatilityEl
   ) return;
 
   const city =
@@ -2088,57 +1855,29 @@ function updateMonthlyStats(history) {
   const stats = getMonthlyStats(history, currentKarat);
   if (!stats) {
     subtitleEl.textContent = `${city} • ${currentKarat} • per gram`;
-    signalCardEl.className = "gold-signal neutral";
-    signalEl.textContent = "🟡 Neutral";
-    signalNoteEl.textContent = "No monthly data";
-    reasonsEl.innerHTML = "";
-    meterFillEl.style.width = "50%";
-    meterMarkerEl.style.left = "50%";
-    meterMarkerEl.style.color = "var(--gold)";
-    positionEl.textContent = "-";
-    trendEl.textContent = "-";
-    rangeEl.textContent = "-";
-    distanceEl.textContent = "-";
+    highEl.textContent = "-";
+    lowEl.textContent = "-";
     avgEl.textContent = "-";
-    confidenceEl.textContent = "Confidence: -";
-    lastSeenEl.textContent = "";
+    changeEl.textContent = "-";
+    changeEl.className = "";
+    volatilityEl.textContent = "-";
     return;
   }
 
+  highEl.textContent = formatRupee(stats.high);
+  lowEl.textContent = formatRupee(stats.low);
   avgEl.textContent = formatRupee(stats.avg);
 
-  const trend = getTrend(stats.change);
-  const signal = stats.signal || {
-    label: "🟡 Neutral",
-    tone: "neutral",
-    note: "Price in mid range"
-  };
-  const reasonChips = Array.isArray(stats.reasons) ? stats.reasons : [];
+  const signed = stats.change > 0 ? "+" : "";
+  changeEl.textContent = `${signed}${formatRupee(stats.change)}`;
+  changeEl.className =
+    stats.change > 0
+      ? "up"
+      : stats.change < 0
+        ? "down"
+        : "";
 
-  signalCardEl.className = `gold-signal ${signal.tone}`;
-  signalEl.textContent = signal.label;
-  signalNoteEl.textContent = signal.note;
-  reasonsEl.innerHTML = reasonChips.length
-    ? reasonChips.map(reason => `<span class="reason-chip">${reason}</span>`).join("")
-    : `<span class="reason-chip muted">Balanced setup</span>`;
-
-  meterFillEl.style.width = `${stats.currentPositionPercent}%`;
-  meterMarkerEl.style.left = `${stats.currentPositionPercent}%`;
-  meterMarkerEl.style.color =
-    signal.tone === "good"
-      ? "var(--green)"
-      : signal.tone === "high"
-        ? "var(--red)"
-        : "var(--gold)";
-
-  positionEl.textContent = `${formatPercent(stats.currentPositionPercent, 0)} (${stats.currentPositionLabel})`;
-  trendEl.textContent = trend.label;
-  rangeEl.textContent = `${formatRupee(stats.range)} (${formatPercent(stats.rangePercent, 0)})`;
-  distanceEl.textContent = stats.distanceLabel;
-  confidenceEl.textContent = `Confidence: ${stats.confidence}%`;
-  lastSeenEl.textContent = stats.lastSeenDaysAgo
-    ? `Last seen at this level: ${stats.lastSeenDaysAgo} days ago`
-    : "";
+  volatilityEl.textContent = stats.volatility;
 }
 
 function generatePortfolioItemId() {
