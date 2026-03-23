@@ -999,7 +999,7 @@ input:focus {
 }
 
 .reason-chip::before{
-  content:"✓";
+  content:"\2713";
   font-size:11px;
   color:var(--gold);
 }
@@ -1132,7 +1132,7 @@ input:focus {
   }
 
   .monthly-stats::before{
-    content:"";
+    content:"\2713";
     position:absolute;
     inset:-1px;
     border-radius:inherit;
@@ -1220,6 +1220,344 @@ input:focus {
 
   .gold-signal strong{
     font-size:17px;
+  }
+}
+
+/* =========================
+   SMART SIGNAL SCREENSHOT STYLE
+========================= */
+.monthly-stats::before{
+  content:none !important;
+  display:none !important;
+  background:none !important;
+}
+
+.monthly-stats > *{
+  position:relative;
+  z-index:1;
+}
+
+.monthly-stats{
+  display:block;
+  margin-top:18px;
+  padding:20px 20px 16px;
+  border-radius:22px;
+  background:#1b1e26;
+  border:1px solid rgba(255,255,255,0.08);
+  box-shadow:
+    0 10px 28px rgba(0,0,0,0.24),
+    inset 0 1px 0 rgba(255,255,255,0.03);
+  overflow:hidden;
+  font-family:"Segoe UI",system-ui,sans-serif;
+  -webkit-font-smoothing:antialiased;
+  text-rendering:optimizeLegibility;
+}
+
+.monthly-stats-head{
+  display:flex;
+  justify-content:flex-start;
+  align-items:flex-start;
+  margin-bottom:14px;
+}
+
+.monthly-stats-head h3{
+  margin:0;
+  font-size:20px;
+  line-height:1.18;
+  font-weight:700;
+  letter-spacing:-0.01em;
+  color:#f7f8fb;
+}
+
+#statsSubtitle{
+  margin:6px 0 0;
+  font-size:13px;
+  color:#8d919d;
+  letter-spacing:0;
+}
+
+.gold-signal{
+  margin-top:0;
+  padding:16px 18px 15px;
+  border-radius:19px;
+  border:1px solid rgba(20,113,61,0.85);
+  background:#193029;
+  text-align:center;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,0.02);
+}
+
+.gold-signal .signal-label{
+  display:block;
+  margin-bottom:7px;
+  font-size:11px;
+  font-weight:700;
+  letter-spacing:0.22em;
+  text-transform:uppercase;
+  color:#a8aaad;
+}
+
+.gold-signal strong{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  gap:10px;
+  font-size:18px;
+  line-height:1.15;
+  font-weight:700;
+  color:#34d46b;
+  letter-spacing:-0.01em;
+}
+
+.gold-signal strong::before{
+  content:"";
+  width:19px;
+  height:19px;
+  border-radius:50%;
+  background:currentColor;
+  box-shadow:0 0 8px rgba(67,221,116,0.48);
+}
+
+.gold-signal p{
+  margin:6px 0 0;
+  font-size:13px;
+  color:#b0b4bd;
+}
+
+.gold-signal.good{
+  border-color:rgba(20,113,61,0.85);
+  background:#193029;
+}
+
+.gold-signal.good strong,
+.gold-signal.good strong::before{
+  color:#37d067;
+}
+
+.gold-signal.neutral{
+  border-color:rgba(212,175,55,0.24);
+  background:linear-gradient(180deg, rgba(28,27,22,0.92), rgba(19,18,16,0.96));
+}
+
+.gold-signal.neutral strong,
+.gold-signal.neutral strong::before{
+  color:#e2b84b;
+}
+
+.gold-signal.high{
+  border-color:rgba(239,68,68,0.3);
+  background:linear-gradient(180deg, rgba(33,18,20,0.92), rgba(19,13,15,0.96));
+}
+
+.gold-signal.high strong,
+.gold-signal.high strong::before{
+  color:#ff5f70;
+}
+
+.reason-chips{
+  display:flex;
+  flex-wrap:wrap;
+  gap:8px;
+  margin:14px 0 16px;
+}
+
+.reason-chip{
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+  padding:7px 14px;
+  border-radius:999px;
+  background:#262a34;
+  border:1px solid rgba(255,255,255,0.08);
+  color:#f0f2f5;
+  font-size:12px;
+  line-height:1;
+  font-weight:600;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,0.03);
+}
+
+.reason-chip::before{
+  content:"\2713";
+  font-size:11px;
+  color:#e2b84b;
+}
+
+.reason-chip.muted{
+  color:rgba(255,255,255,0.55);
+}
+
+.reason-chip.muted::before{
+  color:rgba(255,255,255,0.45);
+}
+
+.buy-zone-meter{
+  margin-top:0;
+  padding:14px 15px 14px;
+  border-radius:18px;
+  background:#20232c;
+  border:1px solid rgba(255,255,255,0.06);
+}
+
+.buy-zone-labels{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  margin-bottom:10px;
+  font-size:11px;
+  font-weight:700;
+  letter-spacing:0.04em;
+  color:#9a9faa;
+  text-transform:uppercase;
+}
+
+.buy-zone-labels span{
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+}
+
+.buy-zone-labels span:first-child::after{
+  content:"";
+  width:12px;
+  height:12px;
+  border-radius:50%;
+  background:#38d16b;
+  box-shadow:0 0 10px rgba(56, 209, 107, 0.45);
+}
+
+.buy-zone-labels span:last-child::after{
+  content:"";
+  width:12px;
+  height:12px;
+  border-radius:50%;
+  background:#ff5668;
+  box-shadow:0 0 10px rgba(255, 86, 104, 0.42);
+}
+
+.buy-zone-track{
+  position:relative;
+  height:11px;
+  border-radius:999px;
+  overflow:hidden;
+  background:linear-gradient(90deg, #2fca67 0%, #8dcb42 37%, #edbd39 66%, #ef514f 100%);
+}
+
+.buy-zone-fill{
+  position:absolute;
+  inset:0 auto 0 0;
+  border-radius:999px;
+  background:linear-gradient(90deg, #2fca67 0%, #66d05a 100%);
+}
+
+.buy-zone-marker{
+  position:absolute;
+  top:50%;
+  left:50%;
+  width:14px;
+  height:14px;
+  border-radius:50%;
+  background:currentColor;
+  border:2px solid rgba(255,255,255,0.7);
+  box-shadow:0 0 0 2px rgba(255,255,255,0.08);
+  transform:translate(-50%,-50%);
+}
+
+.meter-dot{
+  width:14px;
+  height:14px;
+  border-radius:50%;
+}
+
+.stats-grid{
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:12px;
+  margin-top:18px;
+}
+
+.stat-card{
+  min-height:72px;
+  padding:14px 14px 13px;
+  border-radius:18px;
+  background:#1b1e26;
+  border:1px solid rgba(255,255,255,0.06);
+  text-align:center;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,0.02);
+}
+
+.stat-card span{
+  display:block;
+  margin-bottom:8px;
+  color:#8f949e;
+  font-size:12px;
+  font-weight:600;
+}
+
+.stat-card strong{
+  display:block;
+  color:#ffffff;
+  font-size:19px;
+  line-height:1.1;
+  font-weight:700;
+  letter-spacing:-0.02em;
+}
+
+.stat-card-emphasis{
+  border-color:rgba(151,119,27,0.68);
+  background:#2b2922;
+  box-shadow:none;
+}
+
+.monthly-trust{
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  margin-top:16px;
+  padding-top:14px;
+  border-top:1px solid rgba(255,255,255,0.06);
+}
+
+.trust-confidence{
+  margin:0;
+  color:#e0b33e;
+  font-size:13px;
+  font-weight:700;
+}
+
+.trust-last-seen{
+  display:none;
+}
+
+@media (min-width: 901px){
+  .monthly-stats{
+    padding:20px 20px 16px;
+  }
+}
+
+@media (max-width:640px){
+  .monthly-stats{
+    padding:16px;
+  }
+
+  .monthly-stats-head h3{
+    font-size:20px;
+  }
+
+  .gold-signal strong{
+    font-size:18px;
+  }
+
+  .reason-chip{
+    font-size:12px;
+    padding:7px 12px;
+  }
+
+  .stats-grid{
+    grid-template-columns:1fr;
+    gap:10px;
+  }
+
+  .stat-card strong{
+    font-size:18px;
   }
 }
 

@@ -400,7 +400,7 @@ function calculatePosition(current, low, high) {
       position: 50,
       label: "Mid Range",
       signal: {
-        label: "🟡 Neutral",
+        label: "Neutral",
         tone: "neutral",
         note: "Price in mid range"
       }
@@ -417,7 +417,7 @@ function calculatePosition(current, low, high) {
       position,
       label: "Near Low",
       signal: {
-        label: "🟢 Good Time to Buy",
+        label: "Good Time to Buy",
         tone: "good",
         note: "Price near monthly low"
       }
@@ -429,7 +429,7 @@ function calculatePosition(current, low, high) {
       position,
       label: "Near High",
       signal: {
-        label: "🔴 Expensive / Wait",
+        label: "Expensive / Wait",
         tone: "high",
         note: "Price near monthly high"
       }
@@ -440,7 +440,7 @@ function calculatePosition(current, low, high) {
     position,
     label: "Mid Range",
     signal: {
-      label: "🟡 Neutral",
+      label: "Neutral",
       tone: "neutral",
       note: "Price in mid range"
     }
@@ -1017,8 +1017,8 @@ function ensureMonthlyStatsSection() {
 
     <div class="buy-zone-meter" aria-label="Monthly buy zone meter">
       <div class="buy-zone-labels" aria-hidden="true">
-        <span>LOW 🟢</span>
-        <span>HIGH 🔴</span>
+        <span>LOW</span>
+        <span>HIGH</span>
       </div>
       <div class="buy-zone-track">
         <div class="buy-zone-fill" id="mMeterFill"></div>
@@ -1051,7 +1051,6 @@ function ensureMonthlyStatsSection() {
 
     <div class="monthly-trust">
       <p id="mConfidence" class="trust-confidence">Confidence: -</p>
-      <p id="mLastSeen" class="trust-last-seen"></p>
     </div>
   `;
 
@@ -2059,7 +2058,6 @@ function updateMonthlyStats(history) {
   const distanceEl = document.getElementById("mDistance");
   const avgEl = document.getElementById("mAvg");
   const confidenceEl = document.getElementById("mConfidence");
-  const lastSeenEl = document.getElementById("mLastSeen");
 
   if (
     !subtitleEl ||
@@ -2074,8 +2072,7 @@ function updateMonthlyStats(history) {
     !rangeEl ||
     !distanceEl ||
     !avgEl ||
-    !confidenceEl ||
-    !lastSeenEl
+    !confidenceEl
   ) return;
 
   const city =
@@ -2089,7 +2086,7 @@ function updateMonthlyStats(history) {
   if (!stats) {
     subtitleEl.textContent = `${city} • ${currentKarat} • per gram`;
     signalCardEl.className = "gold-signal neutral";
-    signalEl.textContent = "🟡 Neutral";
+    signalEl.textContent = "Neutral";
     signalNoteEl.textContent = "No monthly data";
     reasonsEl.innerHTML = "";
     meterFillEl.style.width = "50%";
@@ -2101,7 +2098,6 @@ function updateMonthlyStats(history) {
     distanceEl.textContent = "-";
     avgEl.textContent = "-";
     confidenceEl.textContent = "Confidence: -";
-    lastSeenEl.textContent = "";
     return;
   }
 
@@ -2109,7 +2105,7 @@ function updateMonthlyStats(history) {
 
   const trend = getTrend(stats.change);
   const signal = stats.signal || {
-    label: "🟡 Neutral",
+    label: "Neutral",
     tone: "neutral",
     note: "Price in mid range"
   };
@@ -2136,9 +2132,6 @@ function updateMonthlyStats(history) {
   rangeEl.textContent = `${formatRupee(stats.range)} (${formatPercent(stats.rangePercent, 0)})`;
   distanceEl.textContent = stats.distanceLabel;
   confidenceEl.textContent = `Confidence: ${stats.confidence}%`;
-  lastSeenEl.textContent = stats.lastSeenDaysAgo
-    ? `Last seen at this level: ${stats.lastSeenDaysAgo} days ago`
-    : "";
 }
 
 function generatePortfolioItemId() {
