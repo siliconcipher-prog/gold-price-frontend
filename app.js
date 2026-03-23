@@ -377,11 +377,34 @@ function formatWeight(value) {
   })}g`;
 }
 
+function formatIntegerRupee(value) {
+  const num = Number(value);
+  if (!Number.isFinite(num)) return "0";
+  return num.toLocaleString("en-IN", {
+    maximumFractionDigits: 0
+  });
+}
+
 function formatPercent(value, decimals = 0, includeSign = false) {
   const num = Number(value);
   if (!Number.isFinite(num)) return "-";
   const sign = includeSign && num > 0 ? "+" : "";
   return `${sign}${num.toFixed(decimals)}%`;
+}
+
+function slugifyCityName(value) {
+  return String(value || "")
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g, "-");
+}
+
+function formatCitySlugLabel(slug) {
+  return String(slug || "")
+    .split("-")
+    .filter(Boolean)
+    .map(part => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(" ");
 }
 
 function calculatePosition(current, low, high) {
@@ -1903,7 +1926,7 @@ function renderData(data, options = {}) {
   hideSkeleton();
 
   document.getElementById("pageHeading").textContent =
-    `${data.city} Gold Price`;
+    `Gold Rate Today in ${data.city}`;
 
   const insightEl = document.getElementById("insight");
   if (!data.history || data.history.length === 0) {
@@ -1945,6 +1968,8 @@ function renderData(data, options = {}) {
   currentPrices = data.prices;
   updateAdvancedCalc();
   updateMonthlyStats(data.history);
+  updateSeoMetadata(data);
+  updateSeoSupportContent(data);
   renderPortfolio();
 
   renderCurrentChart();
@@ -2132,6 +2157,110 @@ function updateMonthlyStats(history) {
   rangeEl.textContent = `${formatRupee(stats.range)} (${formatPercent(stats.rangePercent, 0)})`;
   distanceEl.textContent = stats.distanceLabel;
   confidenceEl.textContent = `Confidence: ${stats.confidence}%`;
+}
+
+function updateSeoMetadata(data) {
+  if (!data?.city || !data?.prices) return;
+
+  const price22 = getKaratValue(data.prices, "22K");
+  if (!Number.isFinite(price22)) return;
+
+  const formattedPrice = formatIntegerRupee(price22);
+  const title = `Gold Rate Today ${data.city} (₹${formattedPrice}) – 22K & 24K Live Price`;
+  const description = `Check live gold rate today in ${data.city} (22K & 24K). Current price ₹${formattedPrice} per gram with daily updates, trends & buying insights.`;
+
+  document.title = title;
+
+  const pageTitleEl = document.getElementById("pageTitle");
+  const metaDescriptionEl = document.getElementById("metaDescription");
+  const ogTitleEl = document.getElementById("ogTitle");
+  const ogDescriptionEl = document.getElementById("ogDescription");
+  const twitterTitleEl = document.getElementById("twitterTitle");
+  const twitterDescriptionEl = document.getElementById("twitterDescription");
+
+  if (pageTitleEl) pageTitleEl.textContent = title;
+  if (metaDescriptionEl) metaDescriptionEl.setAttribute("content", description);
+  if (ogTitleEl) ogTitleEl.setAttribute("content", title);
+  if (ogDescriptionEl) ogDescriptionEl.setAttribute("content", description);
+  if (twitterTitleEl) twitterTitleEl.setAttribute("content", title);
+  if (twitterDescriptionEl) twitterDescriptionEl.setAttribute("content", description);
+}
+
+function updateSeoInternalLinks(city) {
+  const featuredCities = ["chennai", "bangalore", "hyderabad", "mumbai", "delhi"];
+  const currentCitySlug = slugifyCityName(city);
+  const nearbyCityEl = document.getElementById("nearbyCities");
+  const allCityLinksEl = document.getElementById("allCityLinks");
+
+  const nearbyCandidates = Array.isArray(window.__NEARBY_CITY_DATA__) && window.__NEARBY_CITY_DATA__.length
+    ? window.__NEARBY_CITY_DATA__
+    : featuredCities.filter(slug => slug !== currentCitySlug).slice(0, 4);
+
+  const allCityCandidates = Array.isArray(window.__CITY_LINK_DATA__) && window.__CITY_LINK_DATA__.length
+    ? window.__CITY_LINK_DATA__
+    : (featuredCities.includes(currentCitySlug)
+        ? featuredCities
+        : [currentCitySlug, ...featuredCities.filter(slug => slug !== currentCitySlug)].slice(0, 5));
+
+  if (nearbyCityEl) {
+    nearbyCityEl.innerHTML = nearbyCandidates
+      .filter(slug => slug && slug !== currentCitySlug)
+      .slice(0, 4)
+      .map(slug => `<li><a href="/${slug}-gold-rate">Gold Rate in ${formatCitySlugLabel(slug)}</a></li>`)
+      .join("");
+  }
+
+  if (allCityLinksEl) {
+    allCityLinksEl.innerHTML = allCityCandidates
+      .filter(Boolean)
+      .map(slug => `<a href="/${slug}-gold-rate">Gold Rate in ${formatCitySlugLabel(slug)}</a>`)
+      .join(" | ");
+  }
+}
+
+function updateSeoSupportContent(data) {
+  if (!data?.city || !Array.isArray(data.history)) return;
+
+  const trendTextEl = document.getElementById("dynamicTrendText");
+  const buySignalTextEl = document.getElementById("buySignalText");
+  const price22 = getKaratValue(data.prices, "22K");
+  const change22 = calculateChange(data.history, "22K")?.diff ?? 0;
+  const monthlyStats = getMonthlyStats(data.history, currentKarat);
+  const signalTone = monthlyStats?.signal?.tone || "neutral";
+  const signalKeyword =
+    signalTone === "good"
+      ? "low"
+      : signalTone === "high"
+        ? "high"
+        : "neutral";
+
+  if (trendTextEl && Number.isFinite(price22)) {
+    const direction =
+      change22 > 0
+        ? "increased"
+        : change22 < 0
+          ? "decreased"
+          : "remained stable";
+
+    trendTextEl.innerText =
+      `The gold price in ${data.city} today is ₹${formatIntegerRupee(price22)} per gram for 22K gold. ` +
+      `Compared to yesterday, it has ${direction} by ₹${formatIntegerRupee(Math.abs(change22))}.`;
+  }
+
+  if (buySignalTextEl) {
+    const recommendation =
+      signalKeyword === "low"
+        ? "good time to buy"
+        : signalKeyword === "high"
+          ? "wait before buying"
+          : "neutral time";
+
+    buySignalTextEl.innerText =
+      `Based on recent trends, gold prices in ${data.city} are currently ${signalKeyword}. ` +
+      `This may be a ${recommendation} for buyers.`;
+  }
+
+  updateSeoInternalLinks(data.city);
 }
 
 function generatePortfolioItemId() {

@@ -146,6 +146,85 @@ h1 {
   line-height: 1.5;
 }
 
+.seo-hub-link,
+.seo-unique,
+.seo-trend,
+.internal-links,
+.buy-signal-text,
+.city-links-grid {
+  margin-top: 16px;
+  padding: 14px 16px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  box-shadow: none;
+}
+
+.seo-hub-link {
+  margin-top: 0;
+  padding: 0;
+  font-size: 13px;
+  color: var(--text-muted);
+  background: transparent;
+  border: 0;
+}
+
+.seo-hub-link a,
+.internal-links a,
+.city-links-grid a {
+  color: var(--gold);
+  text-decoration: none;
+}
+
+.seo-hub-link a:hover,
+.internal-links a:hover,
+.city-links-grid a:hover {
+  text-decoration: underline;
+}
+
+.seo-unique h3,
+.seo-trend h3,
+.internal-links h3,
+.buy-signal-text h3,
+.city-links-grid h3 {
+  margin: 0 0 10px;
+  font-size: 16px;
+  color: var(--text-main);
+}
+
+.seo-unique p,
+.seo-trend p,
+.buy-signal-text p {
+  margin: 0;
+  color: rgba(255, 255, 255, 0.78);
+  line-height: 1.65;
+  font-size: 14px;
+}
+
+.seo-unique p + p {
+  margin-top: 10px;
+}
+
+.internal-links ul {
+  margin: 0;
+  padding-left: 18px;
+}
+
+.internal-links li + li {
+  margin-top: 8px;
+}
+
+.city-links-grid #allCityLinks {
+  color: rgba(255, 255, 255, 0.78);
+  line-height: 1.8;
+  font-size: 14px;
+}
+
+.seo-support {
+  margin-top: 18px;
+  padding-top: 18px;
+}
+
 /* =========================
    CONTROLS
 ========================= */
