@@ -12,16 +12,17 @@
 </script>
 
   <meta charset='UTF-8'>
-  <title>Gold Price Today in India – 24K, 22K, 18K Rate</title>
+  <title>Gold Rate Today in India (24K &amp; 22K) – Live Price Per Gram</title>
 
 
   <meta
     id="metaDescription"
     name="description"
-    content="Check today's gold price in India. Live 24K, 22K, 18K gold rates with trends."
+    content="Check today's gold rate in India per gram for 24K and 22K gold. Get live prices, daily updates, trends, and latest rates across India."
   />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="robots" content="index, follow">
   <link rel="manifest" href="/manifest.json">
   <meta name="theme-color" content="#d4af37">
   <link rel="icon" href="/icons/favicon.ico">
@@ -29,7 +30,7 @@
   <link rel="icon" type="image/png" sizes="16x16" href="/icons/favicon-16x16.png">
   <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
 
-  <link rel="stylesheet" href="style.css?v=20260334" />
+  <link rel="stylesheet" href="style.css?v=20260335" />
   <link
     rel="preload"
     href="https://rxdmyncafckkpmizpcgu.supabase.co/storage/v1/object/public/data/slabs.json"
@@ -42,13 +43,13 @@
   href="https://goldrateindia.co.in/"
 />
   <meta property="og:type" content="website">
-  <meta property="og:title" content="Gold Price Today in India – 24K, 22K, 18K Rate">
-  <meta property="og:description" content="Live gold prices for 24K, 22K and 18K gold across India with daily updates and price trends.">
+  <meta property="og:title" content="Gold Rate Today in India (24K &amp; 22K) – Live Price Per Gram">
+  <meta property="og:description" content="Check today's gold rate in India per gram for 24K and 22K gold. Live prices, daily updates, and trends across India.">
   <meta property="og:url" content="https://goldrateindia.co.in/">
   <meta property="og:image" content="https://goldrateindia.co.in/og-image.png">
   <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:title" content="Gold Price Today in India">
-  <meta name="twitter:description" content="Check live gold rates in India for 24K, 22K and 18K gold. Updated daily.">
+  <meta name="twitter:title" content="Gold Rate Today in India">
+  <meta name="twitter:description" content="Live gold rate per gram in India for 24K and 22K gold. Updated daily with trends and latest rates.">
 
 
 
@@ -58,12 +59,12 @@
 {
   "@context": "https://schema.org",
   "@type": "Dataset",
-  "name": "India Gold Price Today",
-  "description": "Daily gold prices for 24K, 22K and 18K gold across India.",
+  "name": "India Gold Rate Today",
+  "description": "Daily gold rates for 24K and 22K gold across India.",
   "keywords": [
-    "gold price india",
+    "gold rate india",
     "gold rate today india",
-    "24k gold price india",
+    "24k gold rate india",
     "22k gold rate india"
   ],
   "spatialCoverage": {
@@ -84,15 +85,15 @@
   "mainEntity": [
     {
       "@type": "Question",
-      "name": "What is today's gold price based on?",
+      "name": "What is today's gold rate based on?",
       "acceptedAnswer": {
         "@type": "Answer",
-        "text": "Today's gold price reflects the latest available retail market rates for each city, updated daily for 24K, 22K, and 18K gold."
+        "text": "Today's gold rate reflects the latest available retail market rates for each city, updated daily for 24K, 22K, and 18K gold."
       }
     },
     {
       "@type": "Question",
-      "name": "How often are gold prices updated?",
+      "name": "How often are gold rates updated?",
       "acceptedAnswer": {
         "@type": "Answer",
         "text": "Gold prices are updated once daily based on the most recent market data available."
@@ -100,7 +101,7 @@
     },
     {
       "@type": "Question",
-      "name": "Why do gold prices differ by city?",
+      "name": "Why do gold rates differ by city?",
       "acceptedAnswer": {
         "@type": "Answer",
         "text": "Gold prices vary by city due to local taxes, transportation costs, and regional demand."
@@ -116,15 +117,15 @@
     },
     {
       "@type": "Question",
-      "name": "Why did the gold price change today?",
+      "name": "Why did the gold rate change today?",
       "acceptedAnswer": {
         "@type": "Answer",
-        "text": "Daily gold price changes are influenced by international gold markets, currency movements, and local market factors."
+        "text": "Daily gold rate changes are influenced by international gold markets, currency movements, and local market factors."
       }
     },
     {
       "@type": "Question",
-      "name": "Is this gold price suitable for jewellery buying?",
+      "name": "Is this gold rate suitable for jewellery buying?",
       "acceptedAnswer": {
         "@type": "Answer",
         "text": "The prices shown represent market reference rates. Final jewellery prices may vary based on making charges and taxes."
@@ -132,10 +133,10 @@
     },
     {
       "@type": "Question",
-      "name": "Does this site predict future gold prices?",
+      "name": "Does this site predict future gold rates?",
       "acceptedAnswer": {
         "@type": "Answer",
-        "text": "No. This site only displays current and historical gold prices and does not provide price predictions or investment advice."
+        "text": "No. This site only displays current and historical gold rates and does not provide price predictions or investment advice."
       }
     }
   ]
@@ -154,36 +155,35 @@
 </noscript>
 <!-- Breadcrumb -->
 <nav class="breadcrumb" id="breadcrumb">
-  <a href="/" id="breadcrumbHome">India Gold Price</a>
+  <a href="/" id="breadcrumbHome">India Gold Rate</a>
   <span id="breadcrumbSeparator"> › </span>
   <span id="breadcrumbCity"></span>
 </nav>
 
 <div class="container">
 
-  <h1 id="pageHeading">Gold Price Today in India</h1>
-  <p class="subtitle">Live city-wise retail rates</p>
+  <h1 id="pageHeading">Gold Rate Today in India</h1>
+  <p class="subtitle">Live gold rate per gram in India</p>
   <div class="main-tabs">
     <button class="tab-btn active" data-tab="price" type="button">Price</button>
     <button class="tab-btn" data-tab="calculator" type="button">Calculator</button>
     <button class="tab-btn" data-tab="portfolio" type="button">Portfolio <span class="tab-beta">Beta</span></button>
   </div>
 
-  <!-- âœ… SEO CONTENT (ALWAYS VISIBLE) -->
-<div class="seo-content">
-  <h2>Gold Price Today in <span id="seoCity">India</span></h2>
+  <div class="seo-content">
+    <h2>Gold Rate Today in <span id="seoCity">India</span> (24K &amp; 22K)</h2>
 
-  <p>
-    Today's gold price in <strong><span id="seoCityText">India</span></strong>
-    is updated daily for 24K, 22K, and 18K gold.
-    Prices may vary by city due to local factors.
-  </p>
+    <p>
+      Today's gold rate in <strong><span id="seoCityText">India</span></strong>
+      per gram is updated daily for 24K, 22K, and 18K gold.
+      Prices may vary by city due to local factors.
+    </p>
 
-  <p>
-    Gold prices change daily based on international markets,
-    currency movements, and local demand.
-  </p>
-</div>
+    <p>
+      Gold rates change daily based on international markets,
+      currency movements, and local demand.
+    </p>
+  </div>
 
 <div class="controls">
   <div class="autocomplete-wrapper">
@@ -247,6 +247,62 @@
     <span id="updated"></span>
   </div>
 
+  <section class="monthly-stats" id="monthlyStats">
+    <div class="monthly-stats-head">
+      <div>
+        <h3>Should I Buy Gold Today?</h3>
+        <p id="statsSubtitle">India • 24K • per gram</p>
+      </div>
+    </div>
+
+    <div class="gold-signal neutral" id="mSignalCard">
+      <span class="signal-label">Smart Signal</span>
+      <strong id="mSignal">Neutral</strong>
+      <p id="mSignalNote">Price in mid range</p>
+    </div>
+
+    <div class="reason-chips" id="mReasons"></div>
+
+    <div class="buy-zone-meter" aria-label="Monthly buy zone meter">
+      <div class="buy-zone-labels" aria-hidden="true">
+        <span>LOW 🟢</span>
+        <span>HIGH 🔴</span>
+      </div>
+      <div class="buy-zone-track">
+        <div class="buy-zone-fill" id="mMeterFill"></div>
+        <div class="buy-zone-marker meter-dot" id="mMeterMarker"></div>
+      </div>
+    </div>
+
+    <div class="stats-grid">
+      <div class="stat-card stat-card-emphasis">
+        <span>Current Position</span>
+        <strong id="mPosition">-</strong>
+      </div>
+      <div class="stat-card">
+        <span>Trend Direction</span>
+        <strong id="mTrend">-</strong>
+      </div>
+      <div class="stat-card">
+        <span>Range Spread</span>
+        <strong id="mRange">-</strong>
+      </div>
+      <div class="stat-card">
+        <span>Distance from Low</span>
+        <strong id="mDistance">-</strong>
+      </div>
+      <div class="stat-card">
+        <span>Average</span>
+        <strong id="mAvg">-</strong>
+      </div>
+    </div>
+
+    <div class="monthly-trust">
+      <p id="mConfidence" class="trust-confidence">Confidence: -</p>
+      <p id="mLastSeen" class="trust-last-seen"></p>
+    </div>
+  </section>
+
   <!-- CHART -->
   <div id="chartWrapper" class="chart-wrapper hidden">
     <div class="chart-controls">
@@ -262,33 +318,6 @@
       <button class="range-btn" data-range="90">90D</button>
     </div>
   </div>
-
-  <section class="monthly-stats" id="monthlyStats">
-    <h3>Monthly Gold Stats</h3>
-    <p id="statsSubtitle">India • 24K • per gram</p>
-    <div class="stats-grid">
-      <div class="stat-card">
-        <span>High</span>
-        <strong id="mHigh">-</strong>
-      </div>
-      <div class="stat-card">
-        <span>Low</span>
-        <strong id="mLow">-</strong>
-      </div>
-      <div class="stat-card">
-        <span>Average</span>
-        <strong id="mAvg">-</strong>
-      </div>
-      <div class="stat-card">
-        <span>Monthly Change</span>
-        <strong id="mChange">-</strong>
-      </div>
-      <div class="stat-card">
-        <span>Volatility</span>
-        <strong id="mVolatility">-</strong>
-      </div>
-    </div>
-  </section>
   </div>
 
   <div id="tab-calculator" class="tab-content">
@@ -551,18 +580,18 @@
   <h2>Frequently Asked Questions</h2>
 
   <details>
-    <summary>What is today's gold price based on?</summary>
-    <p>Today's gold price reflects the latest available retail market rates for each city, updated daily for 24K, 22K, and 18K gold.</p>
+    <summary>What is today's gold rate based on?</summary>
+    <p>Today's gold rate reflects the latest available retail market rates for each city, updated daily for 24K, 22K, and 18K gold.</p>
   </details>
 
   <details>
-    <summary>How often are gold prices updated?</summary>
-    <p>Gold prices are updated once daily based on the most recent market data available.</p>
+    <summary>How often are gold rates updated?</summary>
+    <p>Gold rates are updated once daily based on the most recent market data available.</p>
   </details>
 
   <details>
-    <summary>Why do gold prices differ by city?</summary>
-    <p>Gold prices vary by city due to local taxes, transportation costs, and regional demand.</p>
+    <summary>Why do gold rates differ by city?</summary>
+    <p>Gold rates vary by city due to local taxes, transportation costs, and regional demand.</p>
   </details>
 
   <details>
@@ -571,18 +600,18 @@
   </details>
 
   <details>
-    <summary>Why did the gold price change today?</summary>
-    <p>Daily gold price changes are influenced by international gold markets, currency movements, and local market factors.</p>
+    <summary>Why did the gold rate change today?</summary>
+    <p>Daily gold rate changes are influenced by international gold markets, currency movements, and local market factors.</p>
   </details>
 
   <details>
-    <summary>Is this gold price suitable for jewellery buying?</summary>
+    <summary>Is this gold rate suitable for jewellery buying?</summary>
     <p>The prices shown represent market reference rates. Final jewellery prices may vary based on making charges and taxes.</p>
   </details>
 
   <details>
-    <summary>Does this site predict future gold prices?</summary>
-    <p>No. This site only displays current and historical gold prices and does not provide price predictions or investment advice.</p>
+    <summary>Does this site predict future gold rates?</summary>
+    <p>No. This site only displays current and historical gold rates and does not provide price predictions or investment advice.</p>
   </details>
 </div>
 
@@ -623,9 +652,8 @@
 
 
 <p class="seo-text">
-  This page shows today's gold price for 24K, 22K, and 18K gold.
-  Prices are updated daily based on the latest available market rates.
-  Gold prices may vary by city due to local factors and taxes.
+  Today gold rate India per gram for 24K and 22K gold is updated daily.
+  Check India gold rate today for 1 gram, 8 gram, and 10 gram rates before buying jewellery.
 </p>
 
 
@@ -706,6 +734,6 @@
   </div>
 </div>
 
-<script src="app.js?v=20260334"></script>
+<script src="app.js?v=20260335"></script>
 </body>
 </html>
