@@ -3,16 +3,21 @@
 #   python -m playwright install
 
 import os
-from datetime import datetime, date
+import sys
+from datetime import datetime
 from zoneinfo import ZoneInfo
-
-import psycopg
-from bs4 import BeautifulSoup
-from playwright.sync_api import sync_playwright
 
 BASE_URL = "https://www.goodreturns.in/gold-rates/"
 SOURCE_NAME = "goodreturns"
 IST = ZoneInfo("Asia/Kolkata")
+RUN_WINDOW_MINUTES = 20
+ALLOWED_RUN_TIMES = [
+    (8, 0),
+    (9, 0),
+    (10, 30),
+    (16, 0),
+    (17, 0),
+]
 
 PG_DSN = os.getenv(
     "PG_DSN",
@@ -33,6 +38,20 @@ ANCHOR_TO_SLAB = {
     "Vadodara": "Vadodara",
     "Ahmedabad": "Vadodara",
 }
+
+def should_run_now():
+    if os.getenv("FORCE_RUN", "").lower() in {"1", "true", "yes"}:
+        return True
+
+    now = datetime.now(IST)
+    current_minutes = now.hour * 60 + now.minute
+
+    for hour, minute in ALLOWED_RUN_TIMES:
+        target_minutes = hour * 60 + minute
+        if abs(current_minutes - target_minutes) <= RUN_WINDOW_MINUTES:
+            return True
+
+    return False
 
 # -------------------------
 # Helpers
@@ -55,6 +74,8 @@ def clean_price(txt):
 # -------------------------
 
 def fetch_overview_html():
+    from playwright.sync_api import sync_playwright
+
     debug("Fetching GoodReturns page (legacy method)...")
 
     with sync_playwright() as p:
@@ -83,6 +104,8 @@ def fetch_overview_html():
 # -------------------------
 
 def parse_prices(html):
+    from bs4 import BeautifulSoup
+
     soup = BeautifulSoup(html, "html.parser")
     slabs = {}
 
@@ -151,11 +174,13 @@ DO UPDATE SET
 """
 
 def insert_slabs(slabs):
+    import psycopg
+
     if not slabs:
         debug("No slabs found. Nothing to insert.")
         return
 
-    today = date.today()
+    today = datetime.now(IST).date()
     with psycopg.connect(PG_DSN) as conn:
         with conn.cursor() as cur:
             for slab, prices in slabs.items():
@@ -179,6 +204,17 @@ def insert_slabs(slabs):
 # -------------------------
 
 def main():
+
+    if "--check-window" in sys.argv[1:]:
+        print(f"should_run={'true' if should_run_now() else 'false'}")
+        return
+
+    if not should_run_now():
+        debug("Skipping execution - outside allowed time window.")
+        return
+
+    debug("Execution window matched.")
+
     html = fetch_overview_html()
     slabs = parse_prices(html)
     insert_slabs(slabs)

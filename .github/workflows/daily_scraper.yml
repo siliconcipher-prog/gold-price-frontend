@@ -2,9 +2,8 @@ name: Daily Gold Price Pipeline
 
 on:
   schedule:
-    - cron: "30 2 * * *"   # 08:00 IST
-    - cron: "0 5 * * *"    # 10:30 IST
-    - cron: "30 11 * * *"  # 17:00 IST
+    # Run every 30 minutes; rate_scraper_V4.py skips outside the allowed IST windows.
+    - cron: "*/30 * * * *"
   workflow_dispatch:
 
 jobs:
@@ -26,16 +25,30 @@ jobs:
         with:
           python-version: "3.12"
 
+      - name: Check execution window
+        id: schedule
+        env:
+          FORCE_RUN: ${{ github.event_name == 'workflow_dispatch' && '1' || '0' }}
+        run: |
+          python rate_scraper_V4.py --check-window >> "$GITHUB_OUTPUT"
+
+      - name: Skip outside execution window
+        if: steps.schedule.outputs.should_run != 'true'
+        run: echo "Skipping pipeline - outside allowed IST execution window."
+
       - name: Install scraper dependencies
+        if: steps.schedule.outputs.should_run == 'true'
         run: |
           pip install --upgrade pip
           pip install -r requirements.scraper.txt
           python -m playwright install chromium
 
       - name: Run scraper
+        if: steps.schedule.outputs.should_run == 'true'
         env:
           PG_DSN: ${{ secrets.PG_DSN }}
           PYTHONUNBUFFERED: "1"
+          FORCE_RUN: ${{ github.event_name == 'workflow_dispatch' && '1' || '0' }}
         run: |
           python rate_scraper_V4.py
 
@@ -44,14 +57,17 @@ jobs:
       # -------------------------
 
       - name: Setup Node
+        if: steps.schedule.outputs.should_run == 'true'
         uses: actions/setup-node@v4
         with:
           node-version: 20
 
       - name: Install Node dependencies
+        if: steps.schedule.outputs.should_run == 'true'
         run: npm install
 
       - name: Generate slabs.json
+        if: steps.schedule.outputs.should_run == 'true'
         run: node scripts/generateSlabs.js
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
