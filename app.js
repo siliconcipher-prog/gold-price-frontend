@@ -154,10 +154,6 @@ function isHomePage() {
   return window.location.pathname === "/";
 }
 
-function isCalculatorPage() {
-  return /\/calculator\.html$/.test(window.location.pathname);
-}
-
 // function getCityFromURL() {
 //   const match = window.location.pathname.match(/^\/([a-z-]+)-gold-rate$/);
 //   if (!match) return null;
@@ -674,8 +670,7 @@ function ensureInsightActions() {
 function ensureWeightToggle() {
   if (document.getElementById("weightToggle")) return;
 
-  const mount = document.getElementById("weightToggleMount");
-  const actions = mount || ensureInsightActions();
+  const actions = ensureInsightActions();
   if (!actions) return;
 
   const toggle = document.createElement("div");
@@ -689,7 +684,7 @@ function ensureWeightToggle() {
     btn.type = "button";
     btn.className = `weight-btn${weight === currentWeight ? " active" : ""}`;
     btn.dataset.weight = String(weight);
-    btn.textContent = weight === 8 ? "8g (Sovereign)" : "1g";
+    btn.textContent = `${weight}g`;
     btn.setAttribute(
       "aria-pressed",
       weight === currentWeight ? "true" : "false"
@@ -1005,10 +1000,9 @@ function showSkeleton() {
 function hideSkeleton() {
   const prices = document.getElementById("prices");
   const priceSkeleton = document.getElementById("priceSkeleton");
-  const chartWrapper = document.getElementById("chartWrapper");
   if (prices) prices.classList.remove("hidden");
   if (priceSkeleton) priceSkeleton.classList.add("hidden");
-  if (chartWrapper) chartWrapper.classList.remove("chart-loading");
+  document.getElementById("chartWrapper").classList.remove("chart-loading");
 }
 
 function setRangeButtonsLoading(loading) {
@@ -1031,27 +1025,55 @@ function ensureMonthlyStatsSection() {
   section.innerHTML = `
     <div class="monthly-stats-head">
       <div>
-        <span class="insight-eyebrow">Smart Insight</span>
         <h3>Should I Buy Gold Today?</h3>
         <p id="statsSubtitle">India • 24K • per gram</p>
       </div>
     </div>
 
     <div class="gold-signal neutral" id="mSignalCard">
-      <span class="signal-label">Status</span>
-      <strong id="mSignal">Wait</strong>
+      <span class="signal-label">Smart Signal</span>
+      <strong id="mSignal">Neutral</strong>
       <p id="mSignalNote">Price in mid range</p>
     </div>
 
+    <div class="reason-chips" id="mReasons"></div>
+
     <div class="buy-zone-meter" aria-label="Monthly buy zone meter">
       <div class="buy-zone-labels" aria-hidden="true">
-        <span>Buy Zone</span>
-        <span>Expensive</span>
+        <span><i class="signal-dot signal-dot-low"></i>LOW</span>
+        <span>HIGH<i class="signal-dot signal-dot-high"></i></span>
       </div>
       <div class="buy-zone-track">
         <div class="buy-zone-fill" id="mMeterFill"></div>
         <div class="buy-zone-marker meter-dot" id="mMeterMarker"></div>
       </div>
+    </div>
+
+    <div class="stats-grid">
+      <div class="stat-card stat-card-emphasis">
+        <span>Current Position</span>
+        <strong id="mPosition">-</strong>
+      </div>
+      <div class="stat-card">
+        <span>Trend Direction</span>
+        <strong id="mTrend">-</strong>
+      </div>
+      <div class="stat-card">
+        <span>Range Spread</span>
+        <strong id="mRange">-</strong>
+      </div>
+      <div class="stat-card">
+        <span>Distance from Low</span>
+        <strong id="mDistance">-</strong>
+      </div>
+      <div class="stat-card">
+        <span>Average</span>
+        <strong id="mAvg">-</strong>
+      </div>
+    </div>
+
+    <div class="monthly-trust">
+      <p id="mConfidence" class="trust-confidence">Confidence: -</p>
     </div>
   `;
 
@@ -1248,27 +1270,20 @@ function ensureMainTabs() {
     tabs = document.createElement("div");
     tabs.className = "main-tabs";
     tabs.innerHTML = `
-      <button class="tab-btn active" data-tab="price" type="button">Home</button>
-      <button class="tab-btn" data-href="/calculator.html" type="button">Calculator</button>
-      <button class="tab-btn" data-tab="portfolio" type="button">Portfolio</button>
+      <button class="tab-btn active" data-tab="price" type="button">Price</button>
+      <button class="tab-btn" data-tab="calculator" type="button">Calculator</button>
+      <button class="tab-btn" data-tab="portfolio" type="button">Portfolio <span class="tab-beta">Beta</span></button>
     `;
     subtitle.insertAdjacentElement("afterend", tabs);
   }
 
-  if (isCalculatorPage()) {
-    return tabs;
-  }
-
   const ensureTabContent = (id, sections, active) => {
-    const existingSections = sections.filter(section => section);
-    if (!existingSections.length) return null;
-
     let panel = document.getElementById(id);
     if (!panel) {
       panel = document.createElement("div");
       panel.id = id;
       panel.className = `tab-content${active ? " active" : ""}`;
-      const anchor = existingSections.find(section => section.parentNode);
+      const anchor = sections.find(section => section && section.parentNode);
       if (anchor?.parentNode) {
         anchor.parentNode.insertBefore(panel, anchor);
       } else {
@@ -1276,7 +1291,7 @@ function ensureMainTabs() {
       }
     }
 
-    existingSections.forEach(section => {
+    sections.forEach(section => {
       if (section && section.parentNode !== panel) {
         panel.appendChild(section);
       }
@@ -1315,43 +1330,30 @@ function initMainTabs() {
 
   const tabs = document.querySelectorAll(".tab-btn");
   const tabContents = document.querySelectorAll(".tab-content");
-  const activateTab = tabName => {
-    tabs.forEach(t => t.classList.toggle("active", t.dataset.tab === tabName));
-    tabContents.forEach(content => {
-      content.classList.toggle("active", content.id === `tab-${tabName}`);
-    });
-  };
 
-  if (!tabs.length) return;
+  if (!tabs.length || !tabContents.length) return;
 
   tabs.forEach(tab => {
     if (tab.dataset.bound === "true") return;
     tab.dataset.bound = "true";
 
     tab.addEventListener("click", () => {
-      if (tab.dataset.href) {
-        window.location.href = tab.dataset.href;
-        return;
-      }
+      tabs.forEach(t => t.classList.remove("active"));
+      tabContents.forEach(content => content.classList.remove("active"));
 
-      activateTab(tab.dataset.tab);
-      if (tab.dataset.tab) {
-        const nextHash = tab.dataset.tab === "portfolio" ? "#portfolio" : "";
-        history.replaceState(null, "", `${window.location.pathname}${nextHash}`);
+      tab.classList.add("active");
+      const target = document.getElementById(`tab-${tab.dataset.tab}`);
+      if (target) {
+        target.classList.add("active");
       }
     });
   });
-
-  if (window.location.hash === "#portfolio") {
-    activateTab("portfolio");
-  }
 }
 
 /* =========================
    AUTOCOMPLETE (FIXED)
 ========================= */
 
-if (cityInput && suggestionBox) {
 cityInput.addEventListener("input", () => {
   clearTimeout(debounceTimer);
 
@@ -1430,7 +1432,6 @@ cityInput.addEventListener("keydown", e => {
     fetchPrice();
   }
 });
-}
 
 /* =========================
    DATA HELPERS
@@ -1786,10 +1787,6 @@ function updateBreadcrumb(city) {
 }
 
 function syncCityURL(city) {
-  if (isCalculatorPage()) {
-    return false;
-  }
-
   const slug = city.toLowerCase().replace(/\s+/g, "-");
   const nextURL = slug === "india" ? "/" : `/${slug}-gold-rate`;
 
@@ -1848,7 +1845,7 @@ if (cityInput && !getSelectedCity()) {
 
   if (smoothRange) {
     setStatus("");
-    document.getElementById("chartWrapper")?.classList.add("chart-loading");
+    document.getElementById("chartWrapper").classList.add("chart-loading");
     setRangeButtonsLoading(true);
   } else {
     setLoading(true);
@@ -1857,7 +1854,7 @@ if (cityInput && !getSelectedCity()) {
   }
 
   const insightEl = document.getElementById("insight");
-  if (!smoothRange && insightEl) {
+  if (!smoothRange) {
     insightEl.textContent = "Checking today's gold price...";
     insightEl.classList.remove("hidden");
   }
@@ -1901,7 +1898,7 @@ if (cityInput && !getSelectedCity()) {
     }
     setRangeButtonsLoading(false);
     document.getElementById("chartWrapper")
-      ?.classList.remove("chart-loading");
+      .classList.remove("chart-loading");
     if (!smoothRange) {
       setLoading(false);
     }
@@ -1928,25 +1925,21 @@ function renderData(data, options = {}) {
   currentData = data;
   hideSkeleton();
 
-  const pageHeading = document.getElementById("pageHeading");
-  if (pageHeading) {
-    pageHeading.textContent = `Gold Rate Today in ${data.city}`;
-  }
+  document.getElementById("pageHeading").textContent =
+    `Gold Rate Today in ${data.city}`;
 
   const insightEl = document.getElementById("insight");
-  if (insightEl && (!data.history || data.history.length === 0)) {
+  if (!data.history || data.history.length === 0) {
     insightEl.textContent = `Showing today's gold price for ${data.city}`;
-  } else if (insightEl) {
+  } else {
     const analysis = getMarketAnalysis(data.history, currentKarat);
     insightEl.textContent = generateMarketSummary(analysis);
-    insightEl.classList.remove("hidden");
   }
+  insightEl.classList.remove("hidden");
 
   PRICE_KEYS.forEach(k => {
     const scaledPrice = scalePrice(data.prices[k]);
     const priceEl = document.getElementById("p" + k.slice(0, 2));
-    const changeEl = document.getElementById("c" + k.slice(0, 2));
-    if (!priceEl || !changeEl) return;
 
     if (animatePrices) {
       animatePriceValue(priceEl, scaledPrice);
@@ -1956,18 +1949,20 @@ function renderData(data, options = {}) {
     }
 
     const change = calculateChange(data.history, k);
+    const el = document.getElementById("c" + k.slice(0, 2));
+
     if (!change) {
-      changeEl.textContent = "-";
-      changeEl.className = "change same";
+      el.textContent = "-";
+      el.className = "change same";
     } else if (change.diff > 0) {
       const scaledDiff = scalePrice(change.diff);
-      changeEl.textContent = `\u2191 ${formatRupee(scaledDiff)} (+${change.percent}%)`;
-      changeEl.className = "change down";
+      el.textContent = `\u2191 ${formatRupee(scaledDiff)} (+${change.percent}%)`;
+      el.className = "change down";
     } else {
       const scaledDiff = scalePrice(Math.abs(change.diff));
-      changeEl.textContent =
+      el.textContent =
         `\u2193 ${formatRupee(scaledDiff)} (-${Math.abs(change.percent)}%)`;
-      changeEl.className = "change up";
+      el.className = "change up";
     }
   });
   currentPrices = data.prices;
@@ -1979,13 +1974,9 @@ function renderData(data, options = {}) {
 
   renderCurrentChart();
 
-  const updatedEl = document.getElementById("updated");
-  if (updatedEl) {
-    document.getElementById("meta")?.classList.remove("hidden");
-    updatedEl.innerHTML =
-      `<span class="updated-main">Updated: ${formatUpdatedTimestamp(data.last_updated)}</span>` +
-      `<span class="updated-sub">Unit: ${currentWeight}g</span>`;
-  }
+  document.getElementById("updated").innerHTML =
+    `<span class="updated-main">Updated: ${formatUpdatedTimestamp(data.last_updated)}</span>` +
+    `<span class="updated-sub">Unit: ${currentWeight}g</span>`;
 }
 
 function getMonthlyStats(history, karat = "24K") {
@@ -2083,6 +2074,7 @@ function updateMonthlyStats(history) {
   const signalCardEl = document.getElementById("mSignalCard");
   const signalEl = document.getElementById("mSignal");
   const signalNoteEl = document.getElementById("mSignalNote");
+  const reasonsEl = document.getElementById("mReasons");
   const meterFillEl = document.getElementById("mMeterFill");
   const meterMarkerEl = document.getElementById("mMeterMarker");
   const positionEl = document.getElementById("mPosition");
@@ -2097,8 +2089,15 @@ function updateMonthlyStats(history) {
     !signalCardEl ||
     !signalEl ||
     !signalNoteEl ||
+    !reasonsEl ||
     !meterFillEl ||
-    !meterMarkerEl
+    !meterMarkerEl ||
+    !positionEl ||
+    !trendEl ||
+    !rangeEl ||
+    !distanceEl ||
+    !avgEl ||
+    !confidenceEl
   ) return;
 
   const city =
@@ -2112,21 +2111,22 @@ function updateMonthlyStats(history) {
   if (!stats) {
     subtitleEl.textContent = `${city} • ${currentKarat} • per gram`;
     signalCardEl.className = "gold-signal neutral";
-    signalEl.textContent = "Wait";
+    signalEl.textContent = "Neutral";
     signalNoteEl.textContent = "No monthly data";
+    reasonsEl.innerHTML = "";
     meterFillEl.style.width = "50%";
     meterMarkerEl.style.left = "50%";
     meterMarkerEl.style.color = "var(--gold)";
-    if (positionEl) positionEl.textContent = "-";
-    if (trendEl) trendEl.textContent = "-";
-    if (rangeEl) rangeEl.textContent = "-";
-    if (distanceEl) distanceEl.textContent = "-";
-    if (avgEl) avgEl.textContent = "-";
-    if (confidenceEl) confidenceEl.textContent = "Confidence: -";
+    positionEl.textContent = "-";
+    trendEl.textContent = "-";
+    rangeEl.textContent = "-";
+    distanceEl.textContent = "-";
+    avgEl.textContent = "-";
+    confidenceEl.textContent = "Confidence: -";
     return;
   }
 
-  if (avgEl) avgEl.textContent = formatRupee(stats.avg);
+  avgEl.textContent = formatRupee(stats.avg);
 
   const trend = getTrend(stats.change);
   const signal = stats.signal || {
@@ -2134,14 +2134,14 @@ function updateMonthlyStats(history) {
     tone: "neutral",
     note: "Price in mid range"
   };
+  const reasonChips = Array.isArray(stats.reasons) ? stats.reasons : [];
+
   signalCardEl.className = `gold-signal ${signal.tone}`;
-  signalEl.textContent =
-    signal.tone === "good"
-      ? "Good Time to Buy"
-      : signal.tone === "high"
-        ? "High Price"
-        : "Wait";
+  signalEl.textContent = signal.label;
   signalNoteEl.textContent = signal.note;
+  reasonsEl.innerHTML = reasonChips.length
+    ? reasonChips.map(reason => `<span class="reason-chip">${reason}</span>`).join("")
+    : `<span class="reason-chip muted">Balanced setup</span>`;
 
   meterFillEl.style.width = `${stats.currentPositionPercent}%`;
   meterMarkerEl.style.left = `${stats.currentPositionPercent}%`;
@@ -2152,19 +2152,14 @@ function updateMonthlyStats(history) {
         ? "var(--red)"
         : "var(--gold)";
 
-  if (positionEl) {
-    positionEl.textContent = `${formatPercent(stats.currentPositionPercent, 0)} (${stats.currentPositionLabel})`;
-  }
-  if (trendEl) trendEl.textContent = trend.label;
-  if (rangeEl) {
-    rangeEl.textContent = `${formatRupee(stats.range)} (${formatPercent(stats.rangePercent, 0)})`;
-  }
-  if (distanceEl) distanceEl.textContent = stats.distanceLabel;
-  if (confidenceEl) confidenceEl.textContent = `Confidence: ${stats.confidence}%`;
+  positionEl.textContent = `${formatPercent(stats.currentPositionPercent, 0)} (${stats.currentPositionLabel})`;
+  trendEl.textContent = trend.label;
+  rangeEl.textContent = `${formatRupee(stats.range)} (${formatPercent(stats.rangePercent, 0)})`;
+  distanceEl.textContent = stats.distanceLabel;
+  confidenceEl.textContent = `Confidence: ${stats.confidence}%`;
 }
 
 function updateSeoMetadata(data) {
-  if (isCalculatorPage()) return;
   if (!data?.city || !data?.prices) return;
 
   const price22 = getKaratValue(data.prices, "22K");
@@ -2224,7 +2219,6 @@ function updateSeoInternalLinks(city) {
 }
 
 function updateSeoSupportContent(data) {
-  if (isCalculatorPage()) return;
   if (!data?.city || !Array.isArray(data.history)) return;
 
   const trendTextEl = document.getElementById("dynamicTrendText");
@@ -2736,7 +2730,6 @@ function updatePortfolioBuyRateWarning() {
 }
 
 function bindPortfolioUi() {
-  if (isCalculatorPage()) return;
   ensurePortfolioSection();
   ensurePortfolioModal();
 
@@ -2889,21 +2882,17 @@ function ensureChartUnitLabel() {
 
 function renderCurrentChart() {
   if (!currentData?.history?.length) return;
-  if (!document.getElementById("historyChart") || !document.getElementById("chartWrapper")) return;
   const chartHistory = currentData.history.slice(-currentRange);
   renderChart(getScaledHistory(chartHistory, currentKarat));
 }
 
 function renderChart(history) {
   if (!history || history.length < 2) return;
-  const chartCanvas = document.getElementById("historyChart");
-  const chartWrapper = document.getElementById("chartWrapper");
-  if (!chartCanvas || !chartWrapper) return;
 
-  chartWrapper.classList.remove("hidden");
+  document.getElementById("chartWrapper").classList.remove("hidden");
   ensureChartUnitLabel();
 
-  const ctx = chartCanvas.getContext("2d");
+  const ctx = document.getElementById("historyChart").getContext("2d");
   const prices = history.map(h => h.price);
   const bounds = computeYAxisBounds(prices);
   const labels = buildDateLabels(history);
@@ -2983,7 +2972,7 @@ function renderChart(history) {
         }
       }
     });
-    chartWrapper.classList.remove("chart-loading");
+    document.getElementById("chartWrapper").classList.remove("chart-loading");
     return;
   }
 
@@ -3015,7 +3004,7 @@ function renderChart(history) {
   chart.options.scales.y.min = bounds.min;
   chart.options.scales.y.max = bounds.max;
   chart.update();
-  chartWrapper.classList.remove("chart-loading");
+  document.getElementById("chartWrapper").classList.remove("chart-loading");
 }
 
 /* =========================
@@ -3125,25 +3114,18 @@ function animateEstimatorUpdate() {
 function updateAdvancedCalc() {
   if (!currentPrices) return;
   const emptyValue = "-";
-  const weightInput = document.getElementById("advWeight");
-  const makingInput = document.getElementById("makingCharge");
-  const wasteInput = document.getElementById("wastePercent");
-  const gstInput = document.getElementById("gstPercent");
+
+  const weight = parseFloat(document.getElementById("advWeight").value);
+  const making = parseFloat(document.getElementById("makingCharge").value) || 0;
+  const waste = parseFloat(document.getElementById("wastePercent").value) || 0;
+  const gst = parseFloat(document.getElementById("gstPercent").value) || 0;
   const bdBase = document.getElementById("bdBase");
   const bdMaking = document.getElementById("bdMaking");
   const bdWaste = document.getElementById("bdWaste");
   const bdSubtotal = document.getElementById("bdSubtotal");
   const bdGst = document.getElementById("bdGst");
   const advancedResult = document.getElementById("advancedResult");
-  if (
-    !weightInput || !makingInput || !wasteInput || !gstInput ||
-    !bdBase || !bdMaking || !bdWaste || !bdSubtotal || !bdGst || !advancedResult
-  ) return;
-
-  const weight = parseFloat(weightInput.value);
-  const making = parseFloat(makingInput.value) || 0;
-  const waste = parseFloat(wasteInput.value) || 0;
-  const gst = parseFloat(gstInput.value) || 0;
+  if (!bdBase || !bdMaking || !bdWaste || !bdSubtotal || !bdGst || !advancedResult) return;
 
   if (!weight || weight <= 0) {
     resetEstimatorPriceValue(bdBase, emptyValue);
@@ -3191,11 +3173,6 @@ document.querySelectorAll(".karat-btn").forEach(btn => {
 
 document.getElementById("estimateJump")
 ?.addEventListener("click", () => {
-  if (!isCalculatorPage()) {
-    window.location.href = "/calculator.html";
-    return;
-  }
-
   const estimator = document.getElementById("estimator");
   if (!estimator) return;
 
@@ -3280,11 +3257,12 @@ document.getElementById("shareEstimate")
 
   const final = document.getElementById("advancedResult").textContent;
   const weight = document.getElementById("advWeight").value;
-  const activeKarat =
-    document.querySelector(".purity-btn.active")?.dataset.karat ||
-    document.querySelector(".karat-btn.active")?.dataset.karat ||
-    "22K";
-  const rate = currentPrices?.[activeKarat] ?? null;
+  const activeKaratBtn = document.querySelector(".karat-btn.active");
+  const activeKarat = activeKaratBtn ? activeKaratBtn.dataset.karat : "24K";
+
+  const rate = activeKaratBtn
+    ? currentPrices?.[activeKarat]
+    : null;
 
   const html = `
   <div class="estimate-share-card">
@@ -3327,10 +3305,7 @@ document.getElementById("setAlert")
     return;
   }
 
-  const karat =
-    document.querySelector(".purity-btn.active")?.dataset.karat ||
-    document.querySelector(".karat-btn.active")?.dataset.karat ||
-    "22K";
+  const karat = document.querySelector(".karat-btn.active").dataset.karat;
   const price = currentPrices[karat];
 
   console.log("Future alert hook:", {
@@ -3344,7 +3319,7 @@ document.getElementById("setAlert")
    INIT
 ========================= */
 
-refreshBtn?.addEventListener("click", () => fetchPrice({ forceRefresh: true }));
+refreshBtn.addEventListener("click", () => fetchPrice({ forceRefresh: true }));
 
 // document.addEventListener("DOMContentLoaded", () => {
 //   const city =
@@ -3413,7 +3388,7 @@ function updateSubmitState() {
   fbSubmit.disabled = feedbackHelpful === null;
 }
 
-if (fbYes) fbYes.onclick = () => {
+fbYes.onclick = () => {
   if (feedbackHelpful === true) {
     // unselect
     feedbackHelpful = null;
@@ -3426,7 +3401,7 @@ if (fbYes) fbYes.onclick = () => {
   updateSubmitState();
 };
 
-if (fbNo) fbNo.onclick = () => {
+fbNo.onclick = () => {
   if (feedbackHelpful === false) {
     // unselect
     feedbackHelpful = null;
@@ -3479,19 +3454,17 @@ const feedbackFab = document.getElementById("feedbackFab");
 const feedbackPanel = document.getElementById("feedbackPanel");
 const feedbackClose = document.getElementById("feedbackClose");
 
-if (feedbackFab) feedbackFab.onclick = () => {
+feedbackFab.onclick = () => {
   feedbackPanel.classList.toggle("hidden");
 };
 
-if (feedbackClose) feedbackClose.onclick = () => {
+feedbackClose.onclick = () => {
   feedbackPanel.classList.add("hidden");
 };
 
 // Optional: close when clicking outside
 document.addEventListener("click", e => {
   if (
-    feedbackPanel &&
-    feedbackFab &&
     !feedbackPanel.contains(e.target) &&
     !feedbackFab.contains(e.target)
   ) {
